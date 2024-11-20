@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            text-align: center;
+            padding-top: 8vh;
+        }
+
+        .headline {
+            width: 100%;               /* 占满整个屏幕宽度 */
+            height: 8vh;               
+            background-color: #fff;                 
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 给白色条添加阴影 */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;           /* 固定在顶部 */
+            top: 0;
+            left: 0;
+            z-index: 1000;             /* 确保在页面的最前面 */
+            box-sizing: border-box;
+            flex-shrink: 0;
+            padding: 0 40px;
+        }
+        button {
+            background-color: #007BFF;
+            color: #fff;
+            padding: 10px 16px;
+            margin: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 4vh;
+        }
+
+        .permission-layout  {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        .permission-header {
+            flex: 0 0 30%; /* 固定宽度占 30% */
+            text-align: center; /* 左对齐文本 */
+        }
+        .permission-container{
+            flex: 0 0 70%; /* 固定宽度占 70% */
+            display: flex; 
+            justify-content: left; 
+            gap: 15px; 
+        }
+
+
+        
+        /* Media queries for responsive behavior */
+        @media (max-width: 320px) {
+            .headline {
+                display: none; /* Hide the headline when the screen is very small (1/4 size) */
+            }
+        }
+
+        @media (min-width: 1920px) {
+            .headline {
+                height: 8vh; /* Keep fixed height for larger screens */
+            }
+        }
+
+
+    </style>
+</head>
+<body>
+    <!-- 显示flash消息 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul>
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    <div class="headline">
+        <h1>Staff Center</h1>
+        <div class="button-container">
+            <button onclick="window.location.href='/'">Home Page</button>
+            <a href="{{ url_for('logout') }}">
+                <button>Log out</button>
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="permission-layout">
+            <div class="permission-header">
+                <h3>My Permission:</h3>
+            </div>
+            <div class="permission-container">
+                {% if staff_permission %}
+                    {% for permission in staff_permission %}
+                        <div class="permission-card">
+                            <p>{{ permission['permission_type'] }}</p>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="permission-card">
+                        <p>You don't have any permission yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+
+    <script></script>
+
+
+</body>
+</html>

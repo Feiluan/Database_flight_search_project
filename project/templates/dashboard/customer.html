@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            text-align: center;
+            padding-top: 8vh;
+        }
+
+        .headline {
+            width: 100%;               /* 占满整个屏幕宽度 */
+            height: 8vh;               
+            background-color: #fff;                 
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 给白色条添加阴影 */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;           /* 固定在顶部 */
+            top: 0;
+            left: 0;
+            z-index: 1000;             /* 确保在页面的最前面 */
+            box-sizing: border-box;
+            flex-shrink: 0;
+            padding: 0 40px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 4vh;
+        }
+
+        button {
+            background-color: #007BFF;
+            color: #fff;
+            padding: 10px 16px;
+            margin: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .login_form {
+            margin: 20px;
+            margin-top: 20px;
+        }
+
+        /* 默认隐藏所有表单 */
+        .form_section {
+            display: none;
+        }
+
+        /* 显示 active 表单 */
+        .form_section.active {
+            display: block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .view_my_flights_filter {
+            margin-bottom: 20px;
+        }
+
+
+        
+        /* Media queries for responsive behavior */
+        @media (max-width: 320px) {
+            .headline {
+                display: none; /* Hide the headline when the screen is very small (1/4 size) */
+            }
+        }
+
+        @media (min-width: 1920px) {
+            .headline {
+                height: 8vh; /* Keep fixed height for larger screens */
+            }
+        }
+
+
+    </style>
+</head>
+<body>
+    <!-- 显示flash消息 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul>
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    <div class="headline">
+        <h1>Customer Center</h1>
+        <span style="font-size: 14px; color: gray;">
+            Welcome, {{ session['user']['email'] }} <!-- 或者是 session['user']['username'] 如果你存的是用户名 -->
+        </span>
+        <div class="button-container">
+            <button onclick="window.location.href='/'">Home Page</button>
+            <a href="{{ url_for('logout') }}">
+                <button>Log out</button>
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="view_my_flights">
+            <div class="view_my_flights_header">
+                <h3>My flights</h3>
+            </div>
+
+            <div class="view_my_flights_filter">
+                <form method="GET" action="/dashboard/customer">
+                    <label for="start_date">Start Date:</label>
+                    <input type="date" id="start_date" name="start_date" 
+                        value="{{ start_date if start_date else '' }}"
+                        onchange="updateEndDateMin()" required>
+                    <label for="end_date">End Date:</label>
+                    <input type="date" id="end_date" name="end_date" 
+                        value="{{ end_date if end_date else '' }}"  
+                        onchange="updateStartDateMax()" required>
+                    <button type="submit">Filter</button>
+                    <button type="submit" name="clear_filter" value="true">Clear Filters</button>
+
+                </form>
+            </div>
+
+            <div class="view_my_flights_container">
+                {% if booked_flights %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Airline</th>
+                                <th>Flight Number</th>
+                                <th>Departure Airport</th>
+                                <th>Departure Time</th>
+                                <th>Arrival Airport</th>
+                                <th>Arrival Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for flight in booked_flights %}
+                            <tr>
+                                <td>{{ flight.airline_name }}</td>
+                                <td>{{ flight.flight_num }}</td>
+                                <td>{{ flight.departure_airport }}</td>
+                                <td>{{ flight.departure_time }}</td>
+                                <td>{{ flight.arrival_airport }}</td>
+                                <td>{{ flight.arrival_time }}</td>
+                                <td>{{ flight.status }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>You haven't book any ticket yet.</p>
+                {% endif %}
+            </div>
+            
+        </div>
+    <div>
+
+    <script>
+        function updateEndDateMin() {
+            // Start Date 
+            const startDate = document.getElementById('start_date').value;
+            const endDateInput = document.getElementById('end_date');
+
+            if (startDate) { endDateInput.min = startDate; }
+        }
+
+        function updateStartDateMax() {
+            const endDate = document.getElementById('end_date').value;
+            const startDateInput = document.getElementById('start_date');
+
+            if (endDate) { startDateInput.max = endDate; }
+        }
+
+        function validateDates() {
+            const startDate = document.getElementById('start_date').value;
+            const endDate = document.getElementById('end_date').value;
+
+            // 如果 Start Date 大于 End Date，阻止表单提交
+            if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+                alert("Start Date cannot be later than End Date.");
+                return false; // 阻止提交
+            }
+            return true; 
+        }
+    </script>
+
+
+</body>
+</html>

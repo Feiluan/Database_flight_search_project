@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flight Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            text-align: center;
+            padding-top: 8vh;
+        }
+
+        .headline {
+            width: 100%;               /* 占满整个屏幕宽度 */
+            height: 8vh;               
+            background-color: #fff;                 
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 给白色条添加阴影 */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;           /* 固定在顶部 */
+            top: 0;
+            left: 0;
+            z-index: 1000;             /* 确保在页面的最前面 */
+            box-sizing: border-box;
+            flex-shrink: 0;
+            padding: 0 40px;
+        }
+        .headline .button-container {
+            display: flex;                   /* Flex container for buttons */
+            gap: 20px;                       /* Space between buttons */
+        }
+        .headline .button-container button {
+            padding: 8px 16px;              /* Padding inside the buttons */
+            background-color: #007BFF;       
+            color: #fff;  
+            border: none;  
+            border-radius: 4px;               
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .headline .button-container button:hover {
+            background-color: #0056b3;       /* Darker blue on hover */
+        }
+
+
+
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 4vh;
+        }
+
+
+        .search_upcoming_flights_header {
+            display: block;
+            font-size: 20px;
+            color: #333;
+            padding: 8px;
+            margin-left: 15px;
+            margin-bottom: 10px;
+            text-align: left; 
+        }
+        .source_city_search_form label{
+            flex: 0 0 40%; /* 固定宽度占 30% */
+            text-align: center; /* 左对齐文本 */
+        }
+        
+        .search_upcoming_flights_container input {
+            width: 50%;
+            padding: 8px 16px;
+            margin-bottom: 10px;
+            margin-left: 20px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        } 
+        
+        button {
+            padding: 8px 16px;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;       /* Darker blue on hover */
+        }
+
+        /* Media queries for responsive behavior */
+        @media (max-width: 320px) {
+            .headline {
+                display: none; /* Hide the headline when the screen is very small (1/4 size) */
+            }
+        }
+
+        @media (min-width: 1920px) {
+            .headline {
+                height: 8vh; /* Keep fixed height for larger screens */
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 显示flash消息 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul>
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    <div class="headline">
+        <h1>Fly anywhere</h1>
+
+        <div class="button-container">
+            <button onclick="window.location.href='/'">Home Page</button>
+            {% if logged_in %}
+                <!-- 如果登陆了，根据 session 中的 identity 跳转到对应的 dashboard -->
+                {% if identity == 'customer' %}
+                    <a href="{{ url_for('customer_dashboard') }}">
+                        <button>Personal Center</button>
+                    </a>
+                {% elif identity == 'agent' %}
+                    <a href="{{ url_for('agent_dashboard') }}">
+                        <button>Personal Center</button>
+                    </a>
+                {% elif identity == 'staff' %}
+                    <a href="{{ url_for('staff_dashboard') }}">
+                        <button>Personal Center</button>
+                    </a>
+                {% endif %}
+            {% else %}
+                <!-- 如果未登录，显示 Login 和 Register 按钮 -->
+                <a href="{{ url_for('login') }}">
+                    <button>Login</button>
+                </a>
+                <a href="{{ url_for('register') }}">
+                    <button>Register</button>
+                </a>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <!-- 游客权限search -->
+    <div class="container">
+
+        <form class="search_form" action="/search" method="post">
+
+            <div class="search_upcoming_flights_header">
+                <label for="keyword">Search upcoming flights</label>
+            </div>
+
+            <div class="search_upcoming_flights_container">
+                <div class="source_city_search_form">
+                    <label for="keyword" style="font-size: 13px; width: 120px;" >Search by city:</label>
+                    <input type="text" id="keyword" name="keyword" placeholder="Enter departure city name">
+                    <button type="submit" id="source_city_search" name="source_city_search">Search</button>
+                </div>
+    
+                <div class="airport_and_destination_city_search_form">
+                    <label for="keyword" style="font-size: 13px; width: 120px;">Search by airport and destination:</label>
+                    <input type="text" name="keyword" style='width: 25%;' placeholder="Enter departure airport name">
+                    <input type="text" id="keyword" name="keyword" style='width: 25%;' placeholder="Enter destination city name">
+                    <button type="submit" id="airport_and_destination_city_search_form" name="airport_and_destination_city_search_form">Search</button>
+                </div>
+    
+                <div class="airport_name_and_date_search_form">
+                    <label for="keyword" style="font-size: 13px; width: 120px;">Search by airport and date:</label>
+                    <input type="text" id="keyword" name="keyword" style='width: 25%;' placeholder="Enter departure airport name">
+                    <input type="text" id="keyword" name="keyword" style='width: 25%;' placeholder="Enter date">
+                    <button type="submit" id="airport_name_and_date_search_form" name="airport_name_and_date_search_form">Search</button>
+                </div>
+            </div>
+            
+        </form>
+    </div>
+
+
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            text-align: center;
+            padding-top: 8vh;
+        }
+
+        .headline {
+            width: 100%;               /* 占满整个屏幕宽度 */
+            height: 8vh;               
+            background-color: #fff;                 
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 给白色条添加阴影 */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;           /* 固定在顶部 */
+            top: 0;
+            left: 0;
+            z-index: 1000;             /* 确保在页面的最前面 */
+            box-sizing: border-box;
+            flex-shrink: 0;
+            padding: 0 40px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 4vh;
+        }
+
+        button {
+            background-color: #007BFF;
+            color: #fff;
+            padding: 10px 16px;
+            margin: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .login_form {
+            margin: 20px;
+            margin-top: 20px;
+        }
+
+        /* 默认隐藏所有表单 */
+        .form_section {
+            display: none;
+        }
+
+        /* 显示 active 表单 */
+        .form_section.active {
+            display: block;
+        }
+
+
+        
+        /* Media queries for responsive behavior */
+        @media (max-width: 320px) {
+            .headline {
+                display: none; /* Hide the headline when the screen is very small (1/4 size) */
+            }
+        }
+
+        @media (min-width: 1920px) {
+            .headline {
+                height: 8vh; /* Keep fixed height for larger screens */
+            }
+        }
+
+
+    </style>
+</head>
+<body>
+    <!-- 显示flash消息 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul>
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    <div class="headline">
+        <h1>Login</h1>
+        <button onclick="window.location.href='/'">Home Page</button>
+    </div>
+
+    <!-- 主container -->
+    <div class="container">
+        <label style="font-size: 20px; margin-bottom: 10px;">Please select your identity and Login</label>
+
+        <form action="{{ url_for('login') }}" method="POST" class="login_form">
+            <div class="form_group">
+                <label for="login_email">Email:</label>
+                <input type="email" id="login_email" name="login_email" required><br><br>
+            </div>
+            <div class="form_group">
+                <label for="login_password">Password:</label>
+                <input type="password" id="login_password" name="login_password" required><br><br>
+            </div>
+            <div class="form_group">
+                <label for="login_identity">Identity:</label>
+                <select id="login_identity" name="login_identity" required>
+                    <option value="" disabled selected>Select your role</option>
+                    <option value="staff">Staff</option>
+                    <option value="customer">Customer</option>
+                    <option value="agent">Agent</option>
+                </select>
+            </div>
+            <div class="form_group">
+                <button type="submit">Login</button>
+            </div>
+        </form>
+    </div>
+
+
+    <script></script>
+
+
+</body>
+</html>

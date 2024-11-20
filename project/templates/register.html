@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            text-align: center;
+            padding-top: 8vh;
+        }
+
+        .headline {
+            width: 100%;               /* 占满整个屏幕宽度 */
+            height: 8vh;               
+            background-color: #fff;                 
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 给白色条添加阴影 */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;           /* 固定在顶部 */
+            top: 0;
+            left: 0;
+            z-index: 1000;             /* 确保在页面的最前面 */
+            box-sizing: border-box;
+            flex-shrink: 0;
+            padding: 0 40px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 4vh;
+        }
+        
+
+        /* 默认隐藏所有表单 */
+        .form_section {
+            display: none;
+        }
+
+        /* 显示 active 表单 */
+        .form_section.active {
+            display: block;
+        }
+
+
+
+
+
+
+        button {
+            background-color: #007BFF;
+            color: #fff;
+            padding: 10px 16px;
+            margin: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+
+
+
+
+    </style>
+</head>
+<body>
+    <!-- 显示flash消息 -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul>
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    <div class="headline">
+        <h1>Register</h1>
+        <button onclick="window.location.href='/'">Home Page</button>
+    </div>
+
+    <!-- 主container -->
+    <div class="container">
+        <!-- 切换不同identity的按钮条 -->
+        <label style="font-size: 20px;">Please select your identity</label>
+        <div class="identity-selector">
+            <button id ="customer_button">Customer</button>
+            <button id ="agent_button">Booking Agent</button>
+            <button id ="staff_button">Airline Staff</button>
+        </div>
+
+        <!-- 用户注册form -->
+        <div id="customer_form" class="form_section active">
+            <form action="{{ url_for('register') }}" method="POST">
+                <!-- type = Customer -->
+                <input type="hidden" name="form_type" value="customer">
+                <div class="form_group">
+                    <label for="customer_email">Email:</label>
+                    <input type="email" id="customer_email" name="customer_email" required><br><br>
+                </div>
+                <div class="form_group">
+                    <label for="customer_name">Name:</label>
+                    <input type="text" id="customer_name" name="customer_name" required><br><br>
+                </div>
+                <div class="form_group">
+                    <label for="customer_password">Password:</label>
+                    <input type="password" id="customer_password" name="customer_password" required><br><br>
+                </div>
+                <div class="form_group">
+                    <label for="customer_building_number">Building Number:</label>
+                    <input type="text" id="customer_building_number" name="customer_building_number" required><br><br>
+                </div>
+                <div class="form_group">
+                    <label for="customer_street">Street:</label>
+                    <input type="text" id="customer_street" name="customer_street" required><br><br>
+                </div>
+                <div class="form_group">
+                    <label for="customer_city">City:</label>
+                    <input type="text" id="customer_city" name="customer_city" required><br><br>
+                </div>
+                <div class="form_group">
+                    <label for="customer_state">State:</label>
+                    <input type="text" id="customer_state" name="customer_state" required><br><br>
+                </div>
+                <div class="form_group">
+                    <label for="customer_phone">Phone:</label>
+                    <input type="text" id="customer_phone" name="customer_phone" required><br><br>
+                </div>
+                <div class="form_group">
+                    <label for="customer_passport">Passport number:</label>
+                    <input type="text" id="customer_passport" name="customer_passport" required><br><br>
+             </div>
+                <div class="form_group">
+                    <label for="customer_passport_expire">Passport Expiry Date:</label>
+                    <input type="date" id="customer_passport_expire" name="customer_passport_expire" required><br><br>
+                </div>
+                <div class="form_group">
+                    <label for="customer_nationality">Nationality:</label>
+                    <input type="text" id="customer_nationality" name="customer_nationality" required><br><br>
+                </div>
+                <div class="form_group">
+                    <label for="customer_birthday">Birthday:</label>
+                    <input type="date" id="customer_birthday" name="customer_birthday" required><br><br>
+                </div>
+                <div class="form_group">
+                    <button type="submit">Register</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="agent_form" class="form_section">
+            <form action="{{ url_for('register') }}" method="POST">
+                <!-- type = agent -->
+                <input type="hidden" name="form_type" value="agent"> 
+                <div class="form_group">
+                    <label for="agent_email">Email:</label>
+                    <input type="email" id="agent_email" name="agent_email" required><br><br>
+                </div>
+                <div class="form_group">
+                    <label for="agent_password">Password:</label>
+                    <input type="password" id="agent_password" name="agent_password" required><br><br>
+                </div>
+                <div class="form_group">
+                    <label for="agent_id">Booking agent id:</label>
+                    <input type="text" id="agent_id" name="agent_id" required><br><br>
+                </div>
+                    <div class="form_group">
+                    <button type="submit">Register</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="staff_form" class="form_section">
+            <form action="{{ url_for('register') }}" method="POST">
+                <!-- type = staff -->
+                <input type="hidden" name="form_type" value="staff">
+                <div class="form_group">
+                    <label for="staff_email">Email:</label>
+                    <input type="email" id="staff_email" name="staff_email" required><br><br>
+                </div>
+                <div class="form_group">
+                    <label for="staff_password">Password:</label>
+                    <input type="password" id="staff_password" name="staff_password" required><br><br>
+                </div>
+                <div class="form_group">
+                    <label for="staff_first_name">First name:</label>
+                    <input type="text" id="staff_first_name" name="staff_first_name" required><br><br>
+                </div>
+                <div class="form_group">
+                    <label for="staff_last_name">Last name:</label>
+                    <input type="text" id="staff_last_name" name="staff_last_name" required><br><br>
+                </div>
+                <div class="form_group">
+                    <label for="staff_birthday">Birthday:</label>
+                    <input type="date" id="staff_birthday" name="staff_birthday" required><br><br>
+                </div>
+                <div class="form_group">
+                    <label for="staff_airline_name">Airline:</label>
+
+                    <select id="staff_airline_name" name="staff_airline_name" required>
+                        <option value="" disabled selected>Select your airline</option>
+                        {% for airline in airlines %}
+                        <option value="{{ airline.airline_name }}">{{ airline.airline_name }}</option>
+                        {% endfor %}
+                    </select><br><br>
+                </div>
+
+                <div class="form_group">
+                    <button type="submit">Register</button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+
+
+    <script>
+        // JavaScript 部分
+        const customer_button = document.getElementById('customer_button');
+        const agent_button = document.getElementById('agent_button');
+        const staff_button = document.getElementById('staff_button');
+        const customer_form = document.getElementById('customer_form');
+        const agent_form = document.getElementById('agent_form');
+        const staff_form = document.getElementById('staff_form');
+
+        customer_button.addEventListener('click', () => {
+            customer_form.classList.add('active');
+            agent_form.classList.remove('active');
+            staff_form.classList.remove('active');
+        });
+
+        agent_button.addEventListener('click', () => {
+            agent_form.classList.add('active');
+            customer_form.classList.remove('active');
+            staff_form.classList.remove('active');
+        });
+
+        staff_button.addEventListener('click', () => {
+            staff_form.classList.add('active');
+            agent_form.classList.remove('active');
+            customer_form.classList.remove('active');
+        });
+
+
+    </script>
+
+
+</body>
+</html>
