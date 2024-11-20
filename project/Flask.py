@@ -304,6 +304,8 @@ def customer_dashboard():
     print(booked_flights) 
     print(booked_flights) 
     print(booked_flights) 
+    print(booked_flights) 
+    print(booked_flights) 
 
 
 
