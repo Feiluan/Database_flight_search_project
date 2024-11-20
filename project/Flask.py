@@ -298,10 +298,14 @@ def customer_dashboard():
         """
         cursor.execute(query, (customer_email, start_date, end_date))
     elif (not start_date and end_date) or (start_date and not end_date):
-        flash('Please select both date!', 'danger')
+        flash('Please select both date!', 'danger') 
         
     booked_flights = cursor.fetchall()
     print(booked_flights) 
+    print(booked_flights) 
+    print(booked_flights) 
+
+
 
          
     db.commit()
