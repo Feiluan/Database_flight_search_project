@@ -119,7 +119,6 @@
                         <form method="POST" style="display:inline;">
                             <input type="hidden" name="action" value="remove_working_airline">
                             <input type="hidden" name="airline_name" value="{{ airline['airline_name'] }}">
-                            <button type="submit">Remove</button>
                         </form>
                     </li>
                 {% endfor %}
@@ -128,8 +127,64 @@
             <p>You don't work for any airline yet.</p>
         {% endif %}
 
+        <div class="view_my_flights">
+            <div class="view_my_flights_header">
+                <h3>My flights</h3>
+            </div>
+
+            <div class="view_my_flights_filter">
+                <form method="GET" action="/dashboard/customer">
+                    <label for="start_date">Start Date:</label>
+                    <input type="date" id="start_date" name="start_date" 
+                        value="{{ start_date if start_date else '' }}"
+                        onchange="updateEndDateMin()" required>
+                    <label for="end_date">End Date:</label>
+                    <input type="date" id="end_date" name="end_date" 
+                        value="{{ end_date if end_date else '' }}"  
+                        onchange="updateStartDateMax()" required>
+                    <button type="submit">Filter</button>
+                    <button type="submit" name="clear_filter" value="true">Clear Filters</button>
+
+                </form>
+            </div>
+
+            <div class="view_my_flights_container">
+                {% if booked_flights %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Airline</th>
+                                <th>Flight Number</th>
+                                <th>Departure Airport</th>
+                                <th>Departure Time</th>
+                                <th>Arrival Airport</th>
+                                <th>Arrival Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for flight in booked_flights %}
+                            <tr>
+                                <td>{{ flight.airline_name }}</td>
+                                <td>{{ flight.flight_num }}</td>
+                                <td>{{ flight.departure_airport }}</td>
+                                <td>{{ flight.departure_time }}</td>
+                                <td>{{ flight.arrival_airport }}</td>
+                                <td>{{ flight.arrival_time }}</td>
+                                <td>{{ flight.status }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p>You haven't book any ticket yet.</p>
+                {% endif %}
+            </div>
+            
+        </div>
+
         <!-- 添加航空公司 -->
-        <h4>Have some update? Add a new airline that you are working for:</h4>
+        <!-- <h4>Have some update? Add a new airline that you are working for:</h4>
         <form method="POST">
             <select name="airline_name" required>
                 <option value="" disabled selected>Select an airline</option>
@@ -139,7 +194,7 @@
             </select>
             <input type="hidden" name="action" value="add_working_airline">
             <button type="submit">Add Airline</button>
-        </form>
+        </form> -->
         
     </div>
 

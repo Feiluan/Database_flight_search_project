@@ -218,9 +218,22 @@ def login():
                 return redirect(url_for('customer_dashboard'))
                 print(f"Redirecting to {identity}_dashboard")
             elif identity == 'agent':
+                session['user']['agent_id'] = user['booking_agent_id']
+                print(session)
                 print(f"Redirecting to {identity}_dashboard")
                 return redirect(url_for('agent_dashboard'))
             elif identity == 'staff':
+                session['user']['airline_name'] = user['airline_name']
+                cursor.execute("SELECT permission_type FROM permission WHERE email = %s", (email,))
+                permissions = cursor.fetchall()
+                print("permissions",permissions)
+                session['user']['permissions'] = [permission['permission_type'] for permission in permissions]
+                
+                # 权限为空 设置一个默认值
+                if not session['user']['permissions']:
+                    session['user']['permissions'] = ['None']
+    
+                print(session)
                 print(f"Redirecting to {identity}_dashboard")
 
                 return redirect(url_for('staff_dashboard'))
@@ -473,7 +486,7 @@ def agent_dashboard():
     agent_email = session['user']['email']
     cursor = db.cursor(dictionary=True)
     
-    # airline agent not working for, 给selector用
+    # airline agent not working for
     cursor.execute("""
         SELECT airline_name 
         FROM airline 
@@ -484,30 +497,104 @@ def agent_dashboard():
         )""", (agent_email,))
     airlines_not_working_for = cursor.fetchall()  
 
-    # 从目前的booking_agent_work_for里面拉数据出来
+    # 目前的booking_agent_work_for
     cursor.execute("SELECT airline_name FROM booking_agent_work_for WHERE email = %s", (agent_email,))
     airlines_working_for = cursor.fetchall()  
 
-    if request.method == 'POST':
-        action = request.form.get('action')
-        airline_name = request.form.get('airline_name')
 
-        if request.form.get('action') == 'add_working_airline':
-            # 添加航空公司到booking_agent_work_for
-            cursor.execute("INSERT INTO booking_agent_work_for (email, airline_name) VALUES (%s, %s)", (agent_email, airline_name))
-            db.commit()
-            flash('Airline added successfully!', 'success')
+    # if request.method == 'POST':
+    #     action = request.form.get('action')
+    #     airline_name = request.form.get('airline_name')
 
-        elif action == 'remove_working_airline':
-            # 从booking_agent_work_for中删除航空公司
-            cursor.execute("DELETE FROM booking_agent_work_for WHERE email = %s AND airline_name = %s", (agent_email, airline_name))
-            db.commit()
-            flash('Airline removed successfully!', 'success')
+    #     if request.form.get('action') == 'add_working_airline':
+    #         # 添加航空公司到booking_agent_work_for
+    #         cursor.execute("INSERT INTO booking_agent_work_for (email, airline_name) VALUES (%s, %s)", (agent_email, airline_name))
+    #         db.commit()
+    #         flash('Airline added successfully!', 'success')
 
-        return redirect(url_for('agent_dashboard'))
+    #     elif action == 'remove_working_airline':
+    #         # 从booking_agent_work_for中删除航空公司
+    #         cursor.execute("DELETE FROM booking_agent_work_for WHERE email = %s AND airline_name = %s", (agent_email, airline_name))
+    #         db.commit()
+    #         flash('Airline removed successfully!', 'success')
+
+    #     return redirect(url_for('agent_dashboard'))
+
+    
+    customer_email = session['user']['email']
+    cursor = db.cursor(dictionary=True)
+    booked_flights = []
+    
+    #给clear_filter用，传递上一次按filter selector的日期
+    clear_filter = request.args.get('clear_filter', False)
+    if clear_filter:
+        start_date = None
+        end_date = None
+    else:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date') 
+        print("filter my flight: ", start_date,end_date)
+    
+    #没select日期的话直接显示所有你预定过的航班
+    #part: my flights
+    if not start_date and not end_date:
+        query = """
+            SELECT 
+                f.airline_name,
+                f.flight_num,
+                f.departure_airport,
+                f.departure_time,
+                f.arrival_airport,
+                f.arrival_time,
+                f.status
+            FROM purchases p
+            JOIN ticket t ON p.ticket_id = t.ticket_id
+            JOIN flight f ON t.airline_name = f.airline_name AND t.flight_num = f.flight_num
+            WHERE p.customer_email = %s
+            ORDER BY f.departure_time ASC;
+        """
+        cursor.execute(query, (customer_email, ))
+
+    elif (start_date and end_date):
+        if start_date > end_date:
+            flash('Start Date cannot be later than End Date!', 'danger')
+            
+        query = """
+            SELECT 
+                f.airline_name,
+                f.flight_num,
+                f.departure_airport,
+                f.departure_time,
+                f.arrival_airport,
+                f.arrival_time,
+                f.status
+            FROM purchases p
+            JOIN ticket t ON p.ticket_id = t.ticket_id
+            JOIN flight f ON t.airline_name = f.airline_name AND t.flight_num = f.flight_num
+            WHERE p.customer_email = %s AND f.departure_time BETWEEN %s AND %s
+            ORDER BY f.departure_time ASC;
+        """
+        cursor.execute(query, (customer_email, start_date, end_date))
+
+    elif (not start_date and end_date) or (start_date and not end_date):
+        flash('Please select both date!', 'danger') #已经javascript加过了但是这里也警告一下
+        
+    booked_flights = cursor.fetchall()
+    # print(booked_flights) 
+
+
 
     cursor.close()
     return render_template('dashboard/agent.html', airlines_not_working_for=airlines_not_working_for, airlines_working_for=airlines_working_for)
+
+
+
+
+
+
+
+
+
 
 
 
