@@ -81,6 +81,11 @@
         .view_my_flights_filter {
             margin-bottom: 20px;
         }
+        
+        .track_my_spending_header{
+            margin: 20px;
+            margin-top: 60px;
+        }
 
 
         
@@ -181,8 +186,41 @@
             </div>
             
         </div>
+        <div class="track_my_spending">
+            <div class="track_my_spending_header">
+                <h3>Track my spending</h3>
+            </div>
+
+            <div>
+                <label style="margin-bottom: 80px;">Total amount of money spent {{ money_time_range_label }}: {{ money_spend }}</label>
+            </div>
+
+            <div class="track_my_spending_chart">
+                <canvas id="track_my_spending_chart"></canvas>
+            </div>
+
+
+
+
+            <div class="track_my_spendings_filter">
+                <form method="POST" action="/dashboard/customer">
+
+                    <label for="money_start_date">Check spending by time range: </label>
+                    <label for="money_start_date">From</label>
+                    <input type="date" id="money_start_date" name="money_start_date" required>
+            
+                    <label for="money_end_date">To</label>
+                    <input type="date" id="money_end_date" name="money_end_date" required>
+            
+                    <button type="submit">Filter</button>
+                </form>
+            </div>
+            
+
+        </div>
     <div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         function updateEndDateMin() {
             // Start Date 
@@ -210,6 +248,55 @@
             }
             return true; 
         }
+
+
+
+        //money_spend_last_6_months = last_6_months_spending_json
+        const spendingData = JSON.parse('{{ monthly_spending | safe }}');
+        //console.log(spendingData);
+        
+        const months = spendingData.map(data => data.month);
+        const spending = spendingData.map(data => data.monthly_money_spent);
+
+        // 创建柱状图
+        const ctx = document.getElementById('track_my_spending_chart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: months,  // X axis
+                datasets: [{
+                    label: 'Money Spent ($)',
+                    data: spending,  // Y轴数据
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',  // 柱子的背景颜色
+                    borderColor: 'rgba(75, 192, 192, 1)',        // 柱子边框的颜色
+                    borderWidth: 1  // 边框宽度
+                }]
+            },
+            options: {
+                responsive: true,  // 图表响应式
+                plugins: {
+                    legend: {
+                        display: true,  // 是否显示图例
+                        position: 'top'
+                    },
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,  // Y轴从0开始
+                        title: {
+                            display: true,
+                            text: 'Money Spent ($)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Months'
+                        }
+                    }
+                }
+            }
+        });
     </script>
 
 

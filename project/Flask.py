@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, flash, redirect, url_for, session
 import mysql.connector
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, timedelta
+import json
 
 app = Flask(__name__)
 app.secret_key = 'key' #不配置这条会报错
@@ -237,12 +239,35 @@ def login():
 
     return render_template('login.html')
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @app.route('/dashboard/customer', methods=['GET', 'POST'])
 def customer_dashboard():
     # print(f"Redirecting to customer_dashboard")
     if 'user' not in session:
         return redirect(url_for('login')) 
     
+    customer_email = session['user']['email']
+    cursor = db.cursor(dictionary=True)
+    booked_flights = []
+    
+    #给clear_filter用，传递上一次按filter selector的日期
     clear_filter = request.args.get('clear_filter', False)
     if clear_filter:
         start_date = None
@@ -250,15 +275,10 @@ def customer_dashboard():
     else:
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date') 
-        print(start_date,end_date)
+        print("filter my flight: ", start_date,end_date)
     
-        
-    customer_email = session['user']['email']
-    cursor = db.cursor(dictionary=True)
-
-    booked_flights = []
-
-
+    #没select日期的话直接显示所有你预定过的航班
+    #part: my flights
     if not start_date and not end_date:
         query = """
             SELECT 
@@ -297,23 +317,149 @@ def customer_dashboard():
             ORDER BY f.departure_time ASC;
         """
         cursor.execute(query, (customer_email, start_date, end_date))
+
     elif (not start_date and end_date) or (start_date and not end_date):
-        flash('Please select both date!', 'danger') 
+        flash('Please select both date!', 'danger') #已经javascript加过了但是这里也警告一下
         
     booked_flights = cursor.fetchall()
-    print(booked_flights) 
-    print(booked_flights) 
-    print(booked_flights) 
-    print(booked_flights) 
-    print(booked_flights) 
+    # print(booked_flights) 
 
 
 
-         
+
+
+
+
+
+
+
+
+    if request.method == 'POST':
+        money_start_date = request.form.get('money_start_date')
+        money_end_date = request.form.get('money_end_date')
+    else:
+        money_start_date = None
+        money_end_date = None
+    
+    money_spend = []
+    monthly_spending = []
+    print("money count range:", money_start_date,money_end_date)
+
+
+    if money_start_date and money_end_date:
+        # 显示选择范围内的总spending
+        query_total_spent = """
+                SELECT 
+                    SUM(f.price) as money_spend_in_range
+                FROM purchases p
+                JOIN ticket t ON p.ticket_id = t.ticket_id
+                JOIN flight f ON t.airline_name = f.airline_name AND t.flight_num = f.flight_num
+                WHERE p.customer_email = %s
+                AND p.purchase_date BETWEEN %s AND %s;
+            """
+        cursor.execute(query_total_spent, (customer_email, money_start_date, money_end_date))
+        total_spent_result = cursor.fetchone()
+        if total_spent_result and total_spent_result['money_spend_in_range']:
+            money_spend = total_spent_result['money_spend_in_range']
+        else:
+            money_spend = 0
+        # print("money_spend_in select range: ", money_spend)
+
+        # 显示选择范围内的总spending里面如果这个月有开销的话bar chart
+        query_monthly_spending = """
+            SELECT 
+                DATE_FORMAT(p.purchase_date, '%Y-%m') AS month,  -- 格式化为 YYYY-MM
+                SUM(f.price) AS monthly_money_spent
+            FROM purchases p
+            JOIN ticket t ON p.ticket_id = t.ticket_id
+            JOIN flight f ON t.airline_name = f.airline_name AND t.flight_num = f.flight_num
+            WHERE p.customer_email = %s
+            AND p.purchase_date BETWEEN %s AND %s
+            GROUP BY month
+            ORDER BY month;
+        """
+        cursor.execute(query_monthly_spending, (customer_email, money_start_date, money_end_date))
+        monthly_spending = cursor.fetchall()
+
+        money_time_range_label = f"from {money_start_date} to {money_end_date}"
+
+
+    else:
+        #part: 显示money_spend_last_year,默认显示前365天的，但是可以通过filter调整
+        query_money_spend_last_year = """
+                SELECT 
+                    SUM(f.price) as money_spend_last_year
+                FROM purchases p
+                JOIN ticket t ON p.ticket_id = t.ticket_id
+                JOIN flight f ON t.airline_name = f.airline_name AND t.flight_num = f.flight_num
+                WHERE p.customer_email = %s
+                AND p.purchase_date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR);
+            """
+        cursor.execute(query_money_spend_last_year, (customer_email, ))
+        money_spend_last_year = cursor.fetchone()
+        if money_spend_last_year and money_spend_last_year['money_spend_last_year']:
+            money_spend = money_spend_last_year['money_spend_last_year']
+        else:
+            money_spend = 0
+        # print("money_spend_last_year: ", money_spend)
+
+
+        # part:画表bar chart for past 6 month
+        # -- 格式化为 YYYY-MM
+        last_6_months_spending = []
+        
+        query_last_6_months = """
+            SELECT 
+                DATE_FORMAT(p.purchase_date, '%Y-%m') AS month,  
+                SUM(f.price) AS monthly_money_spent
+            FROM purchases p
+            JOIN ticket t ON p.ticket_id = t.ticket_id
+            JOIN flight f ON t.airline_name = f.airline_name AND t.flight_num = f.flight_num
+            WHERE p.customer_email = %s
+            AND p.purchase_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+            GROUP BY month
+            ORDER BY month;
+        """
+        cursor.execute(query_last_6_months, (customer_email,))
+        last_6_months_spending = cursor.fetchall()
+        # print("last_6_months_spending: ",last_6_months_spending)
+
+        #last_6_months_spending = 从数据库里面拉出来了的last_6_months_soending
+        months = [(datetime.today() - timedelta(days=30 * i)).strftime("%Y-%m") for i in range(5, -1, -1)]
+        last_6_months_spending = {item['month']: item['monthly_money_spent'] for item in last_6_months_spending}
+        # print("last_6_months_spending: ",last_6_months_spending)
+
+        #last_6_months_spending, 如果某个月不存在支出记录，补全为0
+        monthly_spending = [
+            {"month": month, "monthly_money_spent": last_6_months_spending.get(month, 0)} for month in months
+        ]
+        print("last_6_months_spending python fix: ",last_6_months_spending)
+
+        money_time_range_label = "in the past 12 months"
+
+
+    for item in monthly_spending:
+        item['monthly_money_spent'] = float(item['monthly_money_spent'])
+
+    monthly_spending_json = json.dumps(monthly_spending)
+    print("last_6_months_spending_json:", monthly_spending_json)  # 在后端打印输出 JSON
+
     db.commit()
     cursor.close()
 
-    return render_template('dashboard/customer.html', booked_flights = booked_flights, start_date = start_date, end_date = end_date)
+    return render_template('dashboard/customer.html', 
+                           booked_flights = booked_flights, start_date = start_date, end_date = end_date,
+                           money_spend = money_spend, monthly_spending = monthly_spending_json, money_time_range_label = money_time_range_label)
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -335,8 +481,7 @@ def agent_dashboard():
             SELECT airline_name 
             FROM booking_agent_work_for 
             WHERE email = %s
-        )
-    """, (agent_email,))
+        )""", (agent_email,))
     airlines_not_working_for = cursor.fetchall()  
 
     # 从目前的booking_agent_work_for里面拉数据出来
