@@ -305,7 +305,7 @@ def customer_dashboard():
             FROM purchases p
             JOIN ticket t ON p.ticket_id = t.ticket_id
             JOIN flight f ON t.airline_name = f.airline_name AND t.flight_num = f.flight_num
-            WHERE p.customer_email = %s
+            WHERE p.customer_email = %s AND f.status = 'upcoming'
             ORDER BY f.departure_time ASC;
         """
         cursor.execute(query, (customer_email, ))
@@ -484,6 +484,7 @@ def agent_dashboard():
         return redirect(url_for('login'))  
     
     agent_email = session['user']['email']
+    agent_id = session['user']['agent_id']
     cursor = db.cursor(dictionary=True)
     
     # airline agent not working for
@@ -521,8 +522,6 @@ def agent_dashboard():
     #     return redirect(url_for('agent_dashboard'))
 
     
-    customer_email = session['user']['email']
-    cursor = db.cursor(dictionary=True)
     booked_flights = []
     
     #给clear_filter用，传递上一次按filter selector的日期
@@ -535,7 +534,7 @@ def agent_dashboard():
         end_date = request.args.get('end_date') 
         print("filter my flight: ", start_date,end_date)
     
-    #没select日期的话直接显示所有你预定过的航班
+    #没select日期的话直接显示所有你预定过的航班，默认只显示upcoming的
     #part: my flights
     if not start_date and not end_date:
         query = """
@@ -550,10 +549,12 @@ def agent_dashboard():
             FROM purchases p
             JOIN ticket t ON p.ticket_id = t.ticket_id
             JOIN flight f ON t.airline_name = f.airline_name AND t.flight_num = f.flight_num
-            WHERE p.customer_email = %s
+            WHERE p.booking_agent_id = %s AND status = 'upcoming'
             ORDER BY f.departure_time ASC;
         """
-        cursor.execute(query, (customer_email, ))
+        cursor.execute(query, (agent_id, ))
+        booked_flights = cursor.fetchall()
+        print(booked_flights) 
 
     elif (start_date and end_date):
         if start_date > end_date:
@@ -571,21 +572,24 @@ def agent_dashboard():
             FROM purchases p
             JOIN ticket t ON p.ticket_id = t.ticket_id
             JOIN flight f ON t.airline_name = f.airline_name AND t.flight_num = f.flight_num
-            WHERE p.customer_email = %s AND f.departure_time BETWEEN %s AND %s
+            WHERE p.booking_agent_id = %s AND f.departure_time BETWEEN %s AND %s
             ORDER BY f.departure_time ASC;
         """
-        cursor.execute(query, (customer_email, start_date, end_date))
+        cursor.execute(query, (agent_id, start_date, end_date))
+        booked_flights = cursor.fetchall()
+        print(booked_flights) 
 
     elif (not start_date and end_date) or (start_date and not end_date):
         flash('Please select both date!', 'danger') #已经javascript加过了但是这里也警告一下
         
-    booked_flights = cursor.fetchall()
-    # print(booked_flights) 
+    
 
 
 
     cursor.close()
-    return render_template('dashboard/agent.html', airlines_not_working_for=airlines_not_working_for, airlines_working_for=airlines_working_for)
+    return render_template('dashboard/agent.html', 
+                           airlines_not_working_for=airlines_not_working_for, airlines_working_for=airlines_working_for, 
+                           booked_flights = booked_flights, start_date = start_date, end_date = end_date)
 
 
 

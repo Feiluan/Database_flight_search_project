@@ -27,6 +27,15 @@
             flex-shrink: 0;
             padding: 0 40px;
         }
+        .flash {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .flash.success { background-color: #d4edda; color: #155724; }
+        .flash.error { background-color: #f8d7da; color: #721c24; }
+        .flash.danger { background-color: #f8d7da; color: #721c24; }
 
         .container {
             max-width: 800px;
@@ -87,20 +96,22 @@
 </head>
 <body>
     <!-- 显示flash消息 -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <ul>
-                {% for category, message in messages %}
-                    <li class="{{ category }}">{{ message }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-    {% endwith %}
+    <div id="flash_message">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+    
 
     <div class="headline">
         <h1>Agent Center</h1>
         <span style="font-size: 14px; color: gray;">
-            Welcome, {{ session['user']['email'] }} <!-- 或者是 session['user']['username'] 如果你存的是用户名 -->
+            <!-- 显示title你是谁 -->
+            Welcome, {{ session['user']['email'] }} 
         </span>
         <div class="button-container">
             <button onclick="window.location.href='/'">Home Page</button>
@@ -133,7 +144,8 @@
             </div>
 
             <div class="view_my_flights_filter">
-                <form method="GET" action="/dashboard/customer">
+
+                <form method="GET" action="/dashboard/agent">
                     <label for="start_date">Start Date:</label>
                     <input type="date" id="start_date" name="start_date" 
                         value="{{ start_date if start_date else '' }}"
@@ -146,6 +158,7 @@
                     <button type="submit" name="clear_filter" value="true">Clear Filters</button>
 
                 </form>
+
             </div>
 
             <div class="view_my_flights_container">
@@ -200,12 +213,11 @@
 
 
     <script>
-        setTimeout(function() {
-            const flashMessages = document.getElementById('flash-messages');
-            if (flashMessages) {
-                flashMessages.style.display = 'none';
-            }
-        }, 5000); // 5000 ms
+        const message = document.getElementById('flash_message');
+        const displayTime = message ? message.innerText.length * 500 : 5000; // 每个字符100ms
+        setTimeout(() => {
+            if (message) message.style.display = 'none';
+        }, displayTime);
     </script>
 
 
