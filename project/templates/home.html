@@ -42,6 +42,15 @@
         .headline .button-container button:hover {
             background-color: #0056b3;       /* Darker blue on hover */
         }
+        .flash {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .flash.success { background-color: #d4edda; color: #155724; }
+        .flash.error { background-color: #f8d7da; color: #721c24; }
+        .flash.danger { background-color: #f8d7da; color: #721c24; }
 
 
 
@@ -79,7 +88,7 @@
             border-radius: 4px;
             border: 1px solid #ccc;
         } 
-        
+
         button {
             padding: 8px 16px;
             background-color: #007BFF;
@@ -109,15 +118,15 @@
 </head>
 <body>
     <!-- 显示flash消息 -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <ul>
-                {% for category, message in messages %}
-                    <li class="{{ category }}">{{ message }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-    {% endwith %}
+    <div id="flash_message">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
 
     <div class="headline">
         <h1>Fly anywhere</h1>
@@ -185,6 +194,14 @@
             
         </form>
     </div>
+
+    <script>
+        const message = document.getElementById('flash_message');
+        const displayTime = message ? message.innerText.length * 500 : 5000; // 每个字符100ms
+        setTimeout(() => {
+            if (message) message.style.display = 'none';
+        }, displayTime);
+    </script>
 
 
 </body>

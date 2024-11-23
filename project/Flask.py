@@ -218,9 +218,22 @@ def login():
                 return redirect(url_for('customer_dashboard'))
                 print(f"Redirecting to {identity}_dashboard")
             elif identity == 'agent':
+                session['user']['agent_id'] = user['booking_agent_id']
+                print(session)
                 print(f"Redirecting to {identity}_dashboard")
                 return redirect(url_for('agent_dashboard'))
             elif identity == 'staff':
+                session['user']['airline_name'] = user['airline_name']
+                cursor.execute("SELECT permission_type FROM permission WHERE email = %s", (email,))
+                permissions = cursor.fetchall()
+                print("permissions",permissions)
+                session['user']['permissions'] = [permission['permission_type'] for permission in permissions]
+                
+                # 权限为空 设置一个默认值
+                if not session['user']['permissions']:
+                    session['user']['permissions'] = ['None']
+    
+                print(session)
                 print(f"Redirecting to {identity}_dashboard")
 
                 return redirect(url_for('staff_dashboard'))
@@ -292,7 +305,7 @@ def customer_dashboard():
             FROM purchases p
             JOIN ticket t ON p.ticket_id = t.ticket_id
             JOIN flight f ON t.airline_name = f.airline_name AND t.flight_num = f.flight_num
-            WHERE p.customer_email = %s
+            WHERE p.customer_email = %s AND f.status = 'upcoming'
             ORDER BY f.departure_time ASC;
         """
         cursor.execute(query, (customer_email, ))
@@ -464,6 +477,9 @@ def customer_dashboard():
 
 
 
+
+
+
 @app.route('/dashboard/agent', methods=['GET', 'POST'])
 def agent_dashboard():
     # 如果没有登录，跳转到登录页
@@ -471,9 +487,10 @@ def agent_dashboard():
         return redirect(url_for('login'))  
     
     agent_email = session['user']['email']
+    agent_id = session['user']['agent_id']
     cursor = db.cursor(dictionary=True)
     
-    # airline agent not working for, 给selector用
+    # airline agent not working for
     cursor.execute("""
         SELECT airline_name 
         FROM airline 
@@ -484,30 +501,185 @@ def agent_dashboard():
         )""", (agent_email,))
     airlines_not_working_for = cursor.fetchall()  
 
-    # 从目前的booking_agent_work_for里面拉数据出来
+    # 目前的booking_agent_work_for
     cursor.execute("SELECT airline_name FROM booking_agent_work_for WHERE email = %s", (agent_email,))
     airlines_working_for = cursor.fetchall()  
 
-    if request.method == 'POST':
-        action = request.form.get('action')
-        airline_name = request.form.get('airline_name')
 
-        if request.form.get('action') == 'add_working_airline':
-            # 添加航空公司到booking_agent_work_for
-            cursor.execute("INSERT INTO booking_agent_work_for (email, airline_name) VALUES (%s, %s)", (agent_email, airline_name))
-            db.commit()
-            flash('Airline added successfully!', 'success')
+    # if request.method == 'POST':
+    #     action = request.form.get('action')
+    #     airline_name = request.form.get('airline_name')
 
-        elif action == 'remove_working_airline':
-            # 从booking_agent_work_for中删除航空公司
-            cursor.execute("DELETE FROM booking_agent_work_for WHERE email = %s AND airline_name = %s", (agent_email, airline_name))
-            db.commit()
-            flash('Airline removed successfully!', 'success')
+    #     if request.form.get('action') == 'add_working_airline':
+    #         # 添加航空公司到booking_agent_work_for
+    #         cursor.execute("INSERT INTO booking_agent_work_for (email, airline_name) VALUES (%s, %s)", (agent_email, airline_name))
+    #         db.commit()
+    #         flash('Airline added successfully!', 'success')
 
-        return redirect(url_for('agent_dashboard'))
+    #     elif action == 'remove_working_airline':
+    #         # 从booking_agent_work_for中删除航空公司
+    #         cursor.execute("DELETE FROM booking_agent_work_for WHERE email = %s AND airline_name = %s", (agent_email, airline_name))
+    #         db.commit()
+    #         flash('Airline removed successfully!', 'success')
 
+    #     return redirect(url_for('agent_dashboard'))
+
+    
+    booked_flights = []
+    
+    #给clear_filter用，传递上一次按filter selector的日期
+    clear_filter = request.args.get('clear_filter', False)
+    if clear_filter:
+        start_date = None
+        end_date = None
+    else:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date') 
+        print("filter my flight: ", start_date,end_date)
+    
+    #没select日期的话直接显示所有你预定过的航班，默认只显示upcoming的
+    #part: my flights
+    if not start_date and not end_date:
+        query = """
+            SELECT 
+                p.customer_email,
+                f.airline_name,
+                f.flight_num,
+                f.departure_airport,
+                f.departure_time,
+                f.arrival_airport,
+                f.arrival_time,
+                f.status
+            FROM purchases p
+            JOIN ticket t ON p.ticket_id = t.ticket_id
+            JOIN flight f ON t.airline_name = f.airline_name AND t.flight_num = f.flight_num
+            WHERE p.booking_agent_id = %s AND status = 'upcoming'
+            ORDER BY f.departure_time ASC;
+        """
+        cursor.execute(query, (agent_id, ))
+        booked_flights = cursor.fetchall()
+        print(booked_flights) 
+
+    elif (start_date and end_date):
+        if start_date > end_date:
+            flash('Start Date cannot be later than End Date!', 'danger')
+            
+        query = """
+            SELECT 
+                f.airline_name,
+                f.flight_num,
+                f.departure_airport,
+                f.departure_time,
+                f.arrival_airport,
+                f.arrival_time,
+                f.status
+            FROM purchases p
+            JOIN ticket t ON p.ticket_id = t.ticket_id
+            JOIN flight f ON t.airline_name = f.airline_name AND t.flight_num = f.flight_num
+            WHERE p.booking_agent_id = %s AND f.departure_time BETWEEN %s AND %s
+            ORDER BY f.departure_time ASC;
+        """
+        cursor.execute(query, (agent_id, start_date, end_date))
+        booked_flights = cursor.fetchall()
+        print(booked_flights) 
+
+    elif (not start_date and end_date) or (start_date and not end_date):
+        flash('Please select both date!', 'danger') #已经javascript加过了但是这里也警告一下
+        
+    
+
+
+
+
+
+    # if request.method == 'POST':
+    #     ticket_start_date = request.form.get('ticket_start_date')
+    #     ticket_end_date = request.form.get('ticket_end_date')
+    # else:
+    #     ticket_start_date = None
+    #     ticket_end_date = None
+    # print("ticket date:",ticket_start_date,ticket_end_date)
+    ticket_end_date = datetime.now()
+    ticket_start_date = ticket_end_date - timedelta(days=6*30)
+    print()
+    print('this is day filter:',ticket_end_date,ticket_start_date)
+
+    query = """
+        SELECT p.customer_email, COUNT(*) as ticket_count
+        FROM purchases p
+        JOIN ticket t ON p.ticket_id = t.ticket_id
+        WHERE p.booking_agent_id = %s AND p.purchase_date BETWEEN %s AND %s
+        GROUP BY p.customer_email
+        ORDER BY ticket_count DESC
+        LIMIT 5;
+    """
+    cursor.execute(query, (agent_id, ticket_start_date, ticket_end_date))
+    top_customers_ticket = cursor.fetchall()
+    print('top customer ticket:', top_customers_ticket)
+    
+    top_customers_ticket_json = json.dumps(top_customers_ticket)
+    print('top customer ticket json:',top_customers_ticket_json)
+
+
+
+
+
+
+
+    commission_end_date = datetime.now()
+    commission_start_date = commission_end_date - timedelta(days=12*30)
+    print()
+    print('this is day filter:',commission_end_date,commission_start_date)
+
+    query = """
+        SELECT p.customer_email, SUM(f.price*0.1) AS ticket_commission
+        FROM purchases p
+        JOIN ticket t ON p.ticket_id = t.ticket_id
+        JOIN flight f ON t.airline_name = f.airline_name AND t.flight_num = f.flight_num
+        WHERE p.booking_agent_id = %s 
+        AND p.purchase_date BETWEEN %s AND %s
+        GROUP BY p.customer_email
+        ORDER BY ticket_commission DESC
+        LIMIT 5;
+    """
+
+
+    cursor.execute(query, (agent_id, commission_start_date, commission_end_date))
+    top_customers_commission = cursor.fetchall()
+    print('top customer commision:', top_customers_commission)
+
+    for item in top_customers_commission:
+        item['ticket_commission'] = float(item['ticket_commission'])
+    print(top_customers_commission)
+    
+    top_customers_commission_json = json.dumps(top_customers_commission)
+    print('top customer ticket json:',top_customers_commission)
+
+
+
+
+
+
+
+
+
+
+    
     cursor.close()
-    return render_template('dashboard/agent.html', airlines_not_working_for=airlines_not_working_for, airlines_working_for=airlines_working_for)
+    return render_template('dashboard/agent.html', 
+                           airlines_not_working_for=airlines_not_working_for, airlines_working_for=airlines_working_for, 
+                           booked_flights = booked_flights, start_date = start_date, end_date = end_date,
+                           top_customers_ticket = top_customers_ticket_json,
+                           top_customers_commission = top_customers_commission_json)
+
+
+
+
+
+
+
+
+
 
 
 
