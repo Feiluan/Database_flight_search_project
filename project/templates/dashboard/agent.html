@@ -61,19 +61,21 @@
             background-color: #0056b3;
         }
 
-        .login_form {
-            margin: 20px;
-            margin-top: 20px;
+        .view_top_customers_chart{
+            display: flex;
+            justify-content: space-between; /* 子元素左右分布 */
+            gap: 20px; /* 图表之间的间距 */
+        }
+        .view_top_customers_commission_amount_chart {
+            flex: 1; /* 每个子元素平分可用空间 */
+            max-width: 50%; /* 确保宽度不会超过容器的 50% */
+            box-sizing: border-box; /* 包括 padding 和 border 在宽度计算内 */
         }
 
-        /* 默认隐藏所有表单 */
-        .form_section {
-            display: none;
-        }
-
-        /* 显示 active 表单 */
-        .form_section.active {
-            display: block;
+        .view_top_customers_ticket_number_chart_canvas, 
+        .view_top_customers_commission_amount_chart_canvas {
+            width: 100%; /* 子元素内容填充父容器 */
+            height: auto; /* 根据需要自动调整高度 */
         }
 
 
@@ -166,6 +168,7 @@
                     <table>
                         <thead>
                             <tr>
+                                <th>Customer email</th>
                                 <th>Airline</th>
                                 <th>Flight Number</th>
                                 <th>Departure Airport</th>
@@ -178,6 +181,7 @@
                         <tbody>
                             {% for flight in booked_flights %}
                             <tr>
+                                <td>{{ flight.customer_email }}</td>
                                 <td>{{ flight.airline_name }}</td>
                                 <td>{{ flight.flight_num }}</td>
                                 <td>{{ flight.departure_airport }}</td>
@@ -208,16 +212,193 @@
             <input type="hidden" name="action" value="add_working_airline">
             <button type="submit">Add Airline</button>
         </form> -->
+        <div class="view_top_customers">
+            <div class="view_top_customers_header">
+                <h3>My Top customers</h3>
+            </div>
+
+            
+            <div class="view_top_customers_chart">
+
+                <!-- 五个人，前六个月买票张数最多，barchart -->
+                <div class="view_top_customers_commission_amount_chart">
+
+                    <div class="view_top_customers_ticket_number_chart_canvas">
+                        <canvas id="view_top_customers_header_chart"></canvas>
+                    </div>
+                    <div class="view_top_customers_ticket_number_chart_filter">
+                        <form method="POST" action="/dashboard/customer">
+    
+                            <label >Change time range: </label>
+                            <label for="ticket_start_date">From</label>
+                            <input type="date" id="ticket_start_date" name="ticket_start_date" required>
+                    
+                            <label for="ticket_end_date">To</label>
+                            <input type="date" id="ticket_end_date" name="ticket_end_date" required>
+                    
+                            <button type="submit">Filter</button>
+                        </form>
+                    </div>
+                </div>
+    
+                <!-- 五个人，上一整年买票花钱最多，barchart -->
+                <div class="view_top_customers_commission_amount_chart">
+                    <div class="view_top_customers_commission_amount_chart_canvas">
+                        <canvas id="view_top_customers_commission_amount_chart"></canvas>
+                    </div>
+                    <div class="view_top_customers_commission_amount_chart_filter">
+                        <form method="POST" action="/dashboard/customer">
+        
+                            <label for="money_start_date">From</label>
+                            <input type="date" id="money_start_date" name="money_start_date" required>
+                    
+                            <label for="money_end_date">To</label>
+                            <input type="date" id="money_end_date" name="money_end_date" required>
+                    
+                            <button type="submit">Filter</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        
+            
+            
+
+
+
+
+
+
+        </div>
         
     </div>
 
-
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         const message = document.getElementById('flash_message');
         const displayTime = message ? message.innerText.length * 500 : 5000; // 每个字符100ms
         setTimeout(() => {
             if (message) message.style.display = 'none';
         }, displayTime);
+
+
+
+        //update ticket - customer chart
+        const customers_ticket = JSON.parse('{{ top_customers_ticket | safe }}');
+        console.log(customers_ticket)
+        // const customers_ticket_raw = '{{ top_customers_ticket | safe }}';
+        // if (!customers_ticket_raw) {
+        //     console.error("No data available for customers_ticket.");
+        // } else {
+        //     console.log('test1');
+        //     const customers_ticket = JSON.parse(customers_ticket_raw);
+        //     console.log('test2');
+        //     console.log(customers_ticket);
+        //     console.log('test3');
+        // }
+        
+        const customer_email = customers_ticket.map(data => data.customer_email);
+        const ticket_count = customers_ticket.map(data => data.ticket_count);
+
+        // 创建柱状图
+        const ctx = document.getElementById('view_top_customers_header_chart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: customer_email,  // X axis
+                datasets: [{
+                    label: 'Number of tickets bought',
+                    data: ticket_count,  // Y轴数据
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',  // 柱子的背景颜色
+                    borderColor: 'rgba(75, 192, 192, 1)',        // 柱子边框的颜色
+                    borderWidth: 1  // 边框宽度
+                }]
+            },
+            options: {
+                responsive: true,  // 图表响应式
+                plugins: {
+                    legend: {
+                        display: true,  // 是否显示图例
+                        position: 'top'
+                    },
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,  // Y轴从0开始
+                        title: {
+                            display: true,
+                            text: 'Number of tickets bought'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Email'
+                        }
+                    }
+                }
+            }
+        });
+
+
+
+        //update commision - customer chart
+        const customers_commission = JSON.parse('{{ top_customers_commission | safe }}');
+        console.log(customers_commission)
+        // const customers_ticket_raw = '{{ top_customers_ticket | safe }}';
+        // if (!customers_ticket_raw) {
+        //     console.error("No data available for customers_ticket.");
+        // } else {
+        //     console.log('test1');
+        //     const customers_ticket = JSON.parse(customers_ticket_raw);
+        //     console.log('test2');
+        //     console.log(customers_ticket);
+        //     console.log('test3');
+        // }
+        
+        const customer_email_commission = customers_commission.map(data => data.customer_email);
+        const commission_count = customers_commission.map(data => data.ticket_commission);
+        console.log(commission_count)
+
+        // 创建柱状图
+        const ctxx = document.getElementById('view_top_customers_commission_amount_chart').getContext('2d');
+        new Chart(ctxx, {
+            type: 'bar',
+            data: {
+                labels: customer_email_commission,  // X axis
+                datasets: [{
+                    label: 'Amount of commission',
+                    data: commission_count,  // Y轴数据
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',  // 柱子的背景颜色
+                    borderColor: 'rgba(75, 192, 192, 1)',        // 柱子边框的颜色
+                    borderWidth: 1  // 边框宽度
+                }]
+            },
+            options: {
+                responsive: true,  // 图表响应式
+                plugins: {
+                    legend: {
+                        display: true,  // 是否显示图例
+                        position: 'top'
+                    },
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,  // Y轴从0开始
+                        title: {
+                            display: true,
+                            text: 'Amount of commission earned'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Email'
+                        }
+                    }
+                }
+            }
+        });
     </script>
 
 

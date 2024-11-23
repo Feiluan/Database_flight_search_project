@@ -477,6 +477,9 @@ def customer_dashboard():
 
 
 
+
+
+
 @app.route('/dashboard/agent', methods=['GET', 'POST'])
 def agent_dashboard():
     # 如果没有登录，跳转到登录页
@@ -539,6 +542,7 @@ def agent_dashboard():
     if not start_date and not end_date:
         query = """
             SELECT 
+                p.customer_email,
                 f.airline_name,
                 f.flight_num,
                 f.departure_airport,
@@ -586,10 +590,87 @@ def agent_dashboard():
 
 
 
+
+
+    # if request.method == 'POST':
+    #     ticket_start_date = request.form.get('ticket_start_date')
+    #     ticket_end_date = request.form.get('ticket_end_date')
+    # else:
+    #     ticket_start_date = None
+    #     ticket_end_date = None
+    # print("ticket date:",ticket_start_date,ticket_end_date)
+    ticket_end_date = datetime.now()
+    ticket_start_date = ticket_end_date - timedelta(days=6*30)
+    print()
+    print('this is day filter:',ticket_end_date,ticket_start_date)
+
+    query = """
+        SELECT p.customer_email, COUNT(*) as ticket_count
+        FROM purchases p
+        JOIN ticket t ON p.ticket_id = t.ticket_id
+        WHERE p.booking_agent_id = %s AND p.purchase_date BETWEEN %s AND %s
+        GROUP BY p.customer_email
+        ORDER BY ticket_count DESC
+        LIMIT 5;
+    """
+    cursor.execute(query, (agent_id, ticket_start_date, ticket_end_date))
+    top_customers_ticket = cursor.fetchall()
+    print('top customer ticket:', top_customers_ticket)
+    
+    top_customers_ticket_json = json.dumps(top_customers_ticket)
+    print('top customer ticket json:',top_customers_ticket_json)
+
+
+
+
+
+
+
+    commission_end_date = datetime.now()
+    commission_start_date = commission_end_date - timedelta(days=12*30)
+    print()
+    print('this is day filter:',commission_end_date,commission_start_date)
+
+    query = """
+        SELECT p.customer_email, SUM(f.price*0.1) AS ticket_commission
+        FROM purchases p
+        JOIN ticket t ON p.ticket_id = t.ticket_id
+        JOIN flight f ON t.airline_name = f.airline_name AND t.flight_num = f.flight_num
+        WHERE p.booking_agent_id = %s 
+        AND p.purchase_date BETWEEN %s AND %s
+        GROUP BY p.customer_email
+        ORDER BY ticket_commission DESC
+        LIMIT 5;
+    """
+
+
+    cursor.execute(query, (agent_id, commission_start_date, commission_end_date))
+    top_customers_commission = cursor.fetchall()
+    print('top customer commision:', top_customers_commission)
+
+    for item in top_customers_commission:
+        item['ticket_commission'] = float(item['ticket_commission'])
+    print(top_customers_commission)
+    
+    top_customers_commission_json = json.dumps(top_customers_commission)
+    print('top customer ticket json:',top_customers_commission)
+
+
+
+
+
+
+
+
+
+
+    
     cursor.close()
     return render_template('dashboard/agent.html', 
                            airlines_not_working_for=airlines_not_working_for, airlines_working_for=airlines_working_for, 
-                           booked_flights = booked_flights, start_date = start_date, end_date = end_date)
+                           booked_flights = booked_flights, start_date = start_date, end_date = end_date,
+                           top_customers_ticket = top_customers_ticket_json,
+                           top_customers_commission = top_customers_commission_json)
 
 
 
