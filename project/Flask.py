@@ -25,8 +25,20 @@ def home():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    def check_email_exists(email, cursor):
+        query = """
+        SELECT 1 FROM customer WHERE email = %s
+        UNION
+        SELECT 1 FROM booking_agent WHERE email = %s
+        UNION
+        SELECT 1 FROM airline_staff WHERE email = %s
+        """
+        cursor.execute(query, (email, email, email))
+        return cursor.fetchone()
 
-    try:
+    # try:
+    a = 1
+    if a==1 :
         cursor = db.cursor(dictionary=True)
 
         cursor.execute("SELECT airline_name FROM airline")
@@ -70,9 +82,7 @@ def register():
                     return redirect(url_for('register'))
 
                 # 检查是否已存在用户
-                cursor.execute(existing_email_query, (customer_email, customer_email, customer_email,))
-                existing_user = cursor.fetchone()
-                if existing_user:
+                if check_email_exists(customer_email, cursor):
                     flash('Email already exists!', 'danger')
                     return redirect(url_for('register'))
 
@@ -104,9 +114,7 @@ def register():
                     flash('All fields are required!', 'danger')
                     return redirect(url_for('register'))
                 
-                cursor.execute(existing_email_query, (agent_email, agent_email, agent_email,))
-                existing_agent = cursor.fetchone()
-                if existing_agent:
+                if check_email_exists(agent_email, cursor):
                     flash('Email already exists!', 'danger')
                     return redirect(url_for('register'))
                 
@@ -146,9 +154,7 @@ def register():
                     flash('All fields are required!', 'danger')
                     return redirect(url_for('register'))
                 
-                cursor.execute(existing_email_query, (staff_email,staff_email, staff_email,))
-                existing_staff = cursor.fetchone()
-                if existing_staff:
+                if check_email_exists(staff_email, cursor):
                     flash('Email already exists!', 'danger')
                     return redirect(url_for('register'))
             
@@ -166,14 +172,14 @@ def register():
                 flash('Airline Staff registration successful!', 'success')
                 return redirect(url_for('register'))
             
-    except mysql.connector.Error as err:
-            print(f"Database error: {err}")
-            flash("Database error. Please try again later.", "error")
-            return redirect(url_for('register'))
-    finally:
-        if db.is_connected():
-            print('register-finally')
-            cursor.close()
+    # except mysql.connector.Error as err:
+    #         print(f"Database error: {err}")
+    #         flash("Database error. Please try again later.", "error")
+    #         return redirect(url_for('register'))
+    # finally:
+    #     if db.is_connected():
+    #         print('register-finally')
+    #         cursor.close()
 
     return render_template('register.html',airlines=airlines)
 
@@ -227,8 +233,11 @@ def login():
                 cursor.execute("SELECT permission_type FROM permission WHERE email = %s", (email,))
                 permissions = cursor.fetchall()
                 print("permissions",permissions)
-                session['user']['permissions'] = [permission['permission_type'] for permission in permissions]
-                
+
+                permission_types = [permission['permission_type'] for permission in permissions]
+                combined_permissions = ', '.join(permission_types)
+                session['user']['permissions'] = [{'permission_type': combined_permissions}]
+
                 # 权限为空 设置一个默认值
                 if not session['user']['permissions']:
                     session['user']['permissions'] = ['None']
@@ -251,22 +260,6 @@ def login():
         #     cursor.close()
 
     return render_template('login.html')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -466,20 +459,6 @@ def customer_dashboard():
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @app.route('/dashboard/agent', methods=['GET', 'POST'])
 def agent_dashboard():
     # 如果没有登录，跳转到登录页
@@ -674,30 +653,75 @@ def agent_dashboard():
 
 
 
-
-
-
-
-
-
-
-
-
-
 @app.route('/dashboard/staff')
 def staff_dashboard():
     if 'user' not in session:
         return redirect(url_for('login'))  
     
     staff_email = session['user']['email']
+    staff_airline = session['user']['airline_name']
+    staff_permission = session['user']['permissions']
     cursor = db.cursor(dictionary=True)
 
-    cursor.execute("SELECT permission_type FROM permission WHERE email = %s", (staff_email,))
-    staff_permission = cursor.fetchall() 
-    print(staff_permission)
+
+    print("permission:",staff_permission)
+    print("staff airline name:",staff_airline)
+
+
+    # if request.method == 'POST':
+    form_type = request.form.get('form_type')
+    print("form_type:", form_type)
+
+
+    # if form_type == 'default':
+
+    flight_start_date = request.args.get('start_date')
+    flight_end_date = request.args.get('end_date')
+    status_filter = request.args.get('status')
+
+    now = datetime.now()
+    default_flight_start_date = now
+    default_flight_end_date = now + timedelta(days=30)
+
+    query_start_date = flight_start_date if flight_start_date else default_flight_start_date.strftime('%Y-%m-%d')
+    query_end_date = flight_end_date if flight_end_date else default_flight_start_date.strftime('%Y-%m-%d')
+    query_status = status_filter if status_filter else 'upcoming'
+
+    print("datetime test:",query_start_date,query_end_date,query_status)
+
+
+
+
+
+
+
+
+
+    query = """
+        SELECT bf.email, booking_agent.booking_agent_id, bf.airline_name
+        FROM booking_agent_work_for AS bf
+        JOIN booking_agent ON bf.email = booking_agent.email
+        WHERE bf.airline_name = %s 
+    """
+    cursor.execute(query, (staff_airline, ) )
+    airline_booking_agent = cursor.fetchall()
+    print('airline booking agent:', airline_booking_agent)
+
+
+
+
+
+
+
+
+
+
+
+
     
 
-    return render_template('dashboard/staff.html', staff_permission = staff_permission)
+    return render_template('dashboard/staff.html', staff_permission = staff_permission, staff_airline = staff_airline,
+                           airline_booking_agent = airline_booking_agent)
 
 
 
