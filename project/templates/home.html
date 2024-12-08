@@ -166,31 +166,47 @@
 
         <form class="search_form" action="/search" method="post">
 
-            <div class="search_upcoming_flights_header">
-                <label for="keyword">Search upcoming flights</label>
-            </div>
-
             <div class="search_upcoming_flights_container">
+                <!-- 第一行：出发城市和到达城市 -->
                 <div class="source_city_search_form">
-                    <label for="keyword" style="font-size: 13px; width: 120px;" >Search by city:</label>
-                    <input type="text" id="keyword" name="keyword" placeholder="Enter departure city name">
-                    <button type="submit" id="source_city_search" name="source_city_search">Search</button>
+                    <div>
+                        <label for="departure_city" style="font-size: 13px; margin-left: 5px; margin-right: 5px;">Departure City:</label>
+                        <input type="text" id="departure_city" name="departure_city" placeholder="Enter departure city name" style="margin-left: 20px; height: 40px;">
+                    </div>
+                    <div>
+                        <label for="arrival_city" style="font-size: 13px; margin-left: 5px; margin-right: 5px;">Arrival City:</label>
+                        <input type="text" id="arrival_city" name="arrival_city" placeholder="Enter arrival city name" style="margin-left: 40px; height: 40px;">
+                    </div>
                 </div>
-    
-                <div class="airport_and_destination_city_search_form">
-                    <label for="keyword" style="font-size: 13px; width: 120px;">Search by airport and destination:</label>
-                    <input type="text" name="keyword" style='width: 25%;' placeholder="Enter departure airport name">
-                    <input type="text" id="keyword" name="keyword" style='width: 25%;' placeholder="Enter destination city name">
-                    <button type="submit" id="airport_and_destination_city_search_form" name="airport_and_destination_city_search_form">Search</button>
+            
+                <!-- 第二行：出发机场和到达机场 -->
+                <div>
+                    <label for="departure_airport" style="font-size: 13px; margin-left: 5px; margin-right: 5px;">Departure Airport:</label>
+                    <input type="text" id="departure_airport" name="departure_airport" placeholder="Enter departure airport name" style="margin-left: 5px; height: 40px;">
                 </div>
-    
-                <div class="airport_name_and_date_search_form">
-                    <label for="keyword" style="font-size: 13px; width: 120px;">Search by airport and date:</label>
-                    <input type="text" id="keyword" name="keyword" style='width: 25%;' placeholder="Enter departure airport name">
-                    <input type="text" id="keyword" name="keyword" style='width: 25%;' placeholder="Enter date">
-                    <button type="submit" id="airport_name_and_date_search_form" name="airport_name_and_date_search_form">Search</button>
+                <div>
+                    <label for="arrival_airport" style="font-size: 13px; margin-left: 5px; margin-right: 5px;">Arrival Airport:</label>
+                    <input type="text" id="arrival_airport" name="arrival_airport" placeholder="Enter arrival airport name" style="margin-left: 25px; height: 40px;">
+                </div>
+            
+                <!-- 第三行：起飞日期范围 -->
+                <div class="row" style="display: flex; justify-content: space-between; width: 80%; margin-top: 20px;">
+                    <div style="flex: 1; margin-left: 125px;">
+                        <label for="start_date" style="font-size: 13px; display: block;">Earliest Departure Date:</label>
+                        <input type="date" id="start_date" name="start_date" style="width: 80%;">
+                    </div>
+                    <div style="flex: 1; margin-left: 150px;">
+                        <label for="end_date" style="font-size: 13px; display: block;">Latest Departure Date:</label>
+                        <input type="date" id="end_date" name="end_date" style="width: 80%;">
+                    </div>
+                </div>
+            
+                <!-- 搜索按钮 -->
+                <div style="margin-top: 15px;">
+                    <button type="submit" id="search_flights" name="search_flights">Search</button>
                 </div>
             </div>
+            
             
         </form>
     </div>

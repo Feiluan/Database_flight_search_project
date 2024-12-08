@@ -3,23 +3,26 @@ import mysql.connector
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 import json
+import random
 
 app = Flask(__name__)
 app.secret_key = 'key' #不配置这条会报错
 
 # 配置数据库连接
+
 db = mysql.connector.connect(host='localhost',
                             user='root',
                             password='',
-                            database='finalproject')
+                            database='finalproject',
+                            port=3307)
 
 @app.route('/')
 def home():
     if 'user' in session:
         identity = session['user']['identity']
-        return render_template('home.html', logged_in=True, identity=identity)
+        return render_template('home.html', logged_in = True, identity=identity)
     else:
-        return render_template('home.html', logged_in=False)
+        return render_template('home.html', logged_in = False)
     # return render_template('home.html')
 
 
@@ -46,7 +49,7 @@ def register():
 
         if request.method == 'POST':
             form_type = request.form.get('form_type')
-            print(form_type)
+            # print(form_type)
 
             existing_email_query = """
                 SELECT 1 FROM customer WHERE email = %s
@@ -69,7 +72,7 @@ def register():
                 customer_passport_expire = request.form.get('customer_passport_expire')
                 customer_nationality = request.form.get('customer_nationality')
                 customer_birthday = request.form.get('customer_birthday')
-                print(customer_email, customer_name, customer_password) 
+                # print(customer_email, customer_name, customer_password) 
 
                 # 验证注册输入信息是否为空
                 if not all([
@@ -148,7 +151,7 @@ def register():
                 staff_last_name = request.form.get('staff_last_name')
                 staff_birthday = request.form.get('staff_birthday')
                 staff_airline_name = request.form.get('staff_airline_name')
-                print(staff_airline_name)
+                # print(staff_airline_name)
 
                 if not all([staff_email, staff_password, staff_first_name, staff_last_name, staff_birthday, staff_airline_name]):
                     flash('All fields are required!', 'danger')
@@ -189,7 +192,7 @@ def login():
     if request.method == 'POST':
         #get what user input in the login page
         email = request.form.get('login_email').lower().split('@')[0] + '@' + request.form.get('login_email').split('@')[1]
-        password = request.form.get('login_password') #这里get到的密码应该是输入进去什么就是什么，输入1这里就是1
+        password = request.form.get('login_password')  #这里get到的密码应该是输入进去什么就是什么，输入1这里就是1
         identity = request.form.get('login_identity')
         # print(email, password, identity)
 
@@ -265,7 +268,6 @@ def login():
 
 @app.route('/dashboard/customer', methods=['GET', 'POST'])
 def customer_dashboard():
-    # print(f"Redirecting to customer_dashboard")
     if 'user' not in session:
         return redirect(url_for('login')) 
     
@@ -278,10 +280,11 @@ def customer_dashboard():
     if clear_filter:
         start_date = None
         end_date = None
-    else:
+
+    if not clear_filter:
         start_date = request.args.get('start_date')
         end_date = request.args.get('end_date') 
-        print("filter my flight: ", start_date,end_date)
+        # print("filter my flight: ", start_date,end_date)
     
     #没select日期的话直接显示所有你预定过的航班
     #part: my flights
@@ -294,19 +297,18 @@ def customer_dashboard():
                 f.departure_time,
                 f.arrival_airport,
                 f.arrival_time,
-                f.status
+                f.status,
+                p.ticket_id
             FROM purchases p
             JOIN ticket t ON p.ticket_id = t.ticket_id
             JOIN flight f ON t.airline_name = f.airline_name AND t.flight_num = f.flight_num
             WHERE p.customer_email = %s AND f.status = 'upcoming'
             ORDER BY f.departure_time ASC;
         """
-        cursor.execute(query, (customer_email, ))
-
-    elif (start_date and end_date):
+        cursor.execute(query, (customer_email,))
+    elif start_date and end_date:
         if start_date > end_date:
             flash('Start Date cannot be later than End Date!', 'danger')
-            
         query = """
             SELECT 
                 f.airline_name,
@@ -315,7 +317,8 @@ def customer_dashboard():
                 f.departure_time,
                 f.arrival_airport,
                 f.arrival_time,
-                f.status
+                f.status,
+                p.ticket_id
             FROM purchases p
             JOIN ticket t ON p.ticket_id = t.ticket_id
             JOIN flight f ON t.airline_name = f.airline_name AND t.flight_num = f.flight_num
@@ -456,6 +459,34 @@ def customer_dashboard():
     return render_template('dashboard/customer.html', 
                            booked_flights = booked_flights, start_date = start_date, end_date = end_date,
                            money_spend = money_spend, monthly_spending = monthly_spending_json, money_time_range_label = money_time_range_label)
+
+@app.route('/cancel/<ticket_id>', methods=['POST'])
+def cancel_ticket(ticket_id):
+    if 'user' not in session:
+        return redirect(url_for('login'))
+
+    customer_email = session['user']['email']
+    cursor = db.cursor()
+
+    try:
+        # 删除购买记录
+        cursor.execute("DELETE FROM purchases WHERE ticket_id = %s AND customer_email = %s", (ticket_id, customer_email))
+
+        # 删除票务记录
+        cursor.execute("DELETE FROM ticket WHERE ticket_id = %s", (ticket_id,))
+        db.commit()
+
+        flash("Flight successfully canceled.", "success")
+    except Exception as e:
+        db.rollback()
+        flash("An error occurred while canceling the flight. Please try again.", "danger")
+        # print(f"Error: {e}")
+    finally:
+        cursor.close()
+
+    return redirect(url_for('customer_dashboard'))
+
+
 
 
 
@@ -739,35 +770,218 @@ def logout():
     return redirect(url_for('home'))
 
 
-
-
-
-
-
-
-
-
-
-
 @app.route('/search', methods=['GET', 'POST'])
+# @app.route('/search', methods=['POST'])
 def search_flights():
-    keyword = request.form.get('keyword')  # 从表单获取关键词
+    # 获取表单中的用户输入
+    departure_city = request.form.get('departure_city')  # 出发城市
+    arrival_city = request.form.get('arrival_city')  # 到达城市
+    departure_airport = request.form.get('departure_airport')  # 出发机场
+    arrival_airport = request.form.get('arrival_airport')  # 到达机场
+    start_date = request.form.get('start_date')  # 起飞时间（最早）
+    end_date = request.form.get('end_date')  # 到达时间（最晚）
+
     cursor = db.cursor(dictionary=True)
-    
-    if keyword:
-        query = """
-        SELECT * FROM flight 
-        WHERE departure_city LIKE %s 
-        ORDER BY departure_time
-        """
-        like_keyword = f"%{keyword}%"
-        cursor.execute(query, (like_keyword, like_keyword))
-    else:
-        cursor.execute("SELECT * FROM flight ORDER BY departure_time")
-    
+
+    # 构造查询逻辑
+    query = """
+    SELECT f.* FROM flight f
+    JOIN airport d ON f.departure_airport = d.airport_name
+    JOIN airport a ON f.arrival_airport = a.airport_name
+    WHERE 1=1
+    """  # 初始化查询语句
+    params = []  # 用于存储动态参数
+
+    if departure_city and departure_airport:
+        query = "SELECT 1 FROM airport WHERE airport_city = %s AND airport_name = %s"
+        cursor.execute(query, (departure_city, departure_airport))
+        if not cursor.fetchone():
+            flash("Departure city and departure airport do not match. Please try again.", "danger")
+            return redirect(url_for('home'))
+
+    if arrival_city and arrival_airport:
+        query = "SELECT 1 FROM airport WHERE airport_city = %s AND airport_name = %s"
+        cursor.execute(query, (arrival_city, arrival_airport))
+        if not cursor.fetchone():
+            flash("Arrival city and arrival airport do not match. Please try again.", "danger")
+            return redirect(url_for('home'))
+            
+    # 处理出发城市和到达城市
+    if departure_city and not departure_airport:
+        query += " AND d.airport_city = %s"
+        params.append(departure_city)
+
+    if arrival_city and not arrival_airport:
+        query += " AND a.airport_city = %s"
+        params.append(arrival_city)
+
+    # 优先处理出发机场和到达机场
+    if departure_airport:
+        query += " AND f.departure_airport = %s"
+        params.append(departure_airport)
+
+    if arrival_airport:
+        query += " AND f.arrival_airport = %s"
+        params.append(arrival_airport)
+
+    # 处理起飞时间和到达时间
+    if start_date:
+        query += " AND f.departure_time >= %s"
+        params.append(start_date)
+
+    if end_date:
+        query += " AND f.arrival_time <= %s"
+        params.append(end_date)
+
+    # 排序航班时间
+    query += " ORDER BY f.departure_time ASC"
+
+    # 执行查询
+    cursor.execute(query, params)
     flights = cursor.fetchall()
+
     cursor.close()
-    return render_template('search.html', flights=flights, keyword=keyword)
+
+    return render_template('search.html', flights=flights)
+
+@app.route('/purchase/<int:flight_num>', methods=['GET', 'POST'])
+def purchase_flight(flight_num):
+    if 'user' not in session:
+        # 如果未登录，跳转到登录界面
+        flash("Please log in to purchase a flight.", "warning")
+        return redirect(url_for('login'))
+
+    # 获取用户身份
+    identity = session['user']['identity']
+    user_email = session['user']['email']
+
+    cursor = db.cursor(dictionary=True)
+
+    # 查询航班信息
+    cursor.execute("""
+        SELECT airline_name, flight_num, departure_airport, arrival_airport, departure_time, arrival_time, price
+        FROM flight
+        WHERE flight_num = %s
+    """, (flight_num,))
+    flight_info = cursor.fetchone()
+
+
+    # 如果没有找到航班信息，提示用户
+    if not flight_info:
+        flash("The selected flight does not exist. Please try again.", "danger")
+        return redirect(url_for('home'))
+
+    # 如果是顾客
+    if identity == 'customer':
+        # 查询顾客注册时的信息，包括护照和出生日期
+        cursor.execute("""
+            SELECT name, passport_number, passport_expiration, passport_country, date_of_birth
+            FROM customer
+            WHERE email = %s
+        """, (user_email,))
+        customer_info = cursor.fetchone()
+
+        if request.method == 'POST':
+            # 获取用户提交的信息
+            name = request.form.get('name')
+            passport_number = request.form.get('passport_number')
+            passport_expiration = request.form.get('passport_expiration')
+            passport_country = request.form.get('passport_country')
+            date_of_birth = request.form.get('date_of_birth')
+
+            # print('test1\n')
+            # 验证信息完整性
+            if not all([name, passport_number, passport_expiration, passport_country, date_of_birth]):
+            #     flash("All fields are required to complete the purchase.", "danger")
+                return render_template('customer_purchase.html', customer_info=customer_info, flight_info=flight_info)
+
+             # 检查是否已存在相同航班和乘客的票
+            cursor.execute("""
+                SELECT t.ticket_id
+                FROM ticket t
+                JOIN purchases p ON t.ticket_id = p.ticket_id
+                WHERE t.flight_num = %s AND p.customer_email = %s
+            """, (flight_num, user_email))
+            existing_ticket = cursor.fetchone()
+
+            if existing_ticket:
+                # 返回前端弹窗提示信息
+                return render_template(
+                    'customer_purchase.html',
+                    customer_info=customer_info,
+                    flight_info=flight_info,
+                    error={
+                        'message': f"A ticket for this flight ({flight_num}) has already been purchased by this passenger.",
+                        'ticket_id': existing_ticket['ticket_id']
+                    }
+                )
+
+            
+            # 生成一个独立的11位 ticket_id
+            while True:
+                ticket_id = str(random.randint(10**8, 10**9 - 1))  # 生成9位随机数
+                cursor.execute("SELECT 1 FROM ticket WHERE ticket_id = %s", (ticket_id,))
+                if not cursor.fetchone():
+                    break  # 如果 ticket_id 未被使用，退出循环
+
+            # 插入 ticket 表
+            cursor.execute("""
+                INSERT INTO ticket (ticket_id, airline_name, flight_num)
+                VALUES (%s, %s, %s)
+            """, (ticket_id, flight_info['airline_name'], flight_num))
+
+            # 插入 purchases 表
+            cursor.execute("""
+                INSERT INTO purchases (ticket_id, customer_email, purchase_date)
+                VALUES (%s, %s, NOW())
+            """, (ticket_id, user_email))
+
+            # 更新顾客信息（如果需要更新）
+            # cursor.execute("""
+            #     UPDATE customer
+            #     SET name = %s,
+            #         passport_number = %s,
+            #         passport_expiration = %s,
+            #         passport_country = %s,
+            #         date_of_birth = %s
+            #     WHERE email = %s
+            # """, (name, passport_number, passport_expiration, passport_country, date_of_birth, user_email))
+
+            db.commit()
+
+            flash(f"Purchase completed successfully! Your ticket ID is {ticket_id}.", "success")
+            return redirect(url_for('home'))
+
+        return render_template('customer_purchase.html', customer_info=customer_info, flight_info=flight_info)
+
+
+
+    # 如果是代理商
+    elif identity == 'agent':
+        if request.method == 'POST':
+            # 获取用户提交的信息（如果代理商有特定的表单字段，可以扩展）
+            customer_email = request.form.get('customer_email')  # 代理商为客户购买
+            if not customer_email:
+                flash("Customer email is required for agent purchases.", "danger")
+                return render_template('agent_purchase.html', flight_info=flight_info)
+
+            # 插入购买记录
+            cursor.execute("""
+                INSERT INTO purchases (ticket_id, customer_email, purchase_date)
+                VALUES (%s, %s, NOW())
+            """, (flight_num, customer_email))
+            db.commit()
+
+            flash("Purchase completed successfully for the customer!", "success")
+            return redirect(url_for('home'))
+
+        return render_template('agent_purchase.html', flight_info=flight_info)
+
+    # 如果身份不允许购买
+    else:
+        flash("Only customers and agents can purchase flights.", "danger")
+        return redirect(url_for('home'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -17,15 +17,22 @@
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
-        .flight-list {
-            list-style: none;
-            padding: 0;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
         }
-        .flight-list li {
-            background-color: #e9ecef;
-            margin: 10px 0;
+        th, td {
+            text-align: left;
             padding: 10px;
-            border-radius: 4px;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #007BFF;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
         }
         .back-link {
             text-decoration: none;
@@ -37,17 +44,44 @@
 </head>
 <body>
     <div class="container">
-        <h1>Search Results for "{{ keyword }}"</h1>
+        <h1>Search Results</h1>
         {% if flights %}
-            <ul class="flight-list">
-                {% for flight in flights %}
-                    <li>
-                        Flight {{ flight.flight_number }}: {{ flight.departure_city }} -> {{ flight.arrival_city }} at {{ flight.departure_time }}
-                    </li>
-                {% endfor %}
-            </ul>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Airline</th>
+                        <th>Flight Number</th>
+                        <th>Departure Airport</th>
+                        <th>Departure Time</th>
+                        <th>Arrival Airport</th>
+                        <th>Arrival&nbsp;Time</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for flight in flights %}
+                        <tr>
+                            <td>{{ flight.airline_name }}</td>
+                            <td>{{ flight.flight_num }}</td>
+                            <td>{{ flight.departure_airport }}</td>
+                            <td>{{ flight.departure_time }}</td>
+                            <td>{{ flight.arrival_airport }}</td>
+                            <td>{{ flight.arrival_time }}</td>
+                            <td>${{ flight.price }}</td>
+                            <td>{{ flight.status }}</td>
+                            <td>
+                                <form action="/purchase/{{ flight.flight_num }}" method="post">
+                                    <button type="submit">Purchase</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         {% else %}
-            <p>No flights found for the keyword "{{ keyword }}".</p>
+            <p>No flights found for your search criteria.</p>
         {% endif %}
         <a class="back-link" href="/">Back to Home</a>
     </div>
