@@ -163,6 +163,7 @@
                                 <th>Arrival Airport</th>
                                 <th>Arrival Time</th>
                                 <th>Status</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -175,14 +176,21 @@
                                 <td>{{ flight.arrival_airport }}</td>
                                 <td>{{ flight.arrival_time }}</td>
                                 <td>{{ flight.status }}</td>
+                                <td>
+                                    <form action="{{ url_for('cancel_ticket', ticket_id=flight.ticket_id) }}" method="POST">
+                                        <button type="submit" onclick="return confirm('Are you sure you want to cancel this flight?');">
+                                            Cancel
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 {% else %}
-                    <p>You haven't book any ticket yet.</p>
+                    <p>You haven't booked any ticket yet.</p>
                 {% endif %}
-            </div>
+            </div>            
             
         </div>
         
