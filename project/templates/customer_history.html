@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            text-align: center;
+            padding-top: 8vh;
+        }
+
+        .headline {
+            width: 100%;               /* 占满整个屏幕宽度 */
+            height: 8vh;               
+            background-color: #fff;                 
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 给白色条添加阴影 */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;           /* 固定在顶部 */
+            top: 0;
+            left: 0;
+            z-index: 1000;             /* 确保在页面的最前面 */
+            box-sizing: border-box;
+            flex-shrink: 0;
+            padding: 0 40px;
+        }
+        .flash {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .flash.success { background-color: #d4edda; color: #155724; }
+        .flash.error { background-color: #f8d7da; color: #721c24; }
+        .flash.danger { background-color: #f8d7da; color: #721c24; }
+
+        button {
+            background-color: #007BFF;
+            color: #fff;
+            padding: 10px 16px;
+            margin: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 4vh;
+        }
+        
+        .button_row {
+            display: flex;
+            justify-content: center; /* 水平居中 */
+            gap: 10px; /* 按钮之间的间距 */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+
+
+        
+        /* Media queries for responsive behavior */
+        @media (max-width: 320px) {
+            .headline {
+                display: none; /* Hide the headline when the screen is very small (1/4 size) */
+            }
+        }
+
+        @media (min-width: 1920px) {
+            .headline {
+                height: 8vh; /* Keep fixed height for larger screens */
+            }
+        }
+
+
+    </style>
+</head>
+<body>
+    <!-- 显示flash消息 -->
+    <div id="flash_message">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <div class="headline">
+        <h1>Customer history</h1>
+        <span style="font-size: 14px; color: gray;">
+            Welcome, {{ session['user']['email'] }} <!-- 或者是 session['user']['username'] 如果你存的是用户名 -->
+        </span>
+        <div class="button-container">
+            <button onclick="window.location.href='/'">Home Page</button>
+            <a href="{{ url_for('logout') }}">
+                <button>Log out</button>
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+
+        <div class="specific_customer_history">
+            <div class="specific_customer_history title">
+                <h3>Customer history of {{ customer_email }} in {{ session['user']['airline_name'] }}:</h3>    
+            </div>
+            {% if flight_history %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Flight number</th>
+                            <th>Ticket id</th>
+                            <th>Departure Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for flight in flight_history %}
+                        <tr>
+                            <td>{{ flight.flight_num }}</td>
+                            <td>{{ flight.ticket_id }}</td>
+                            <td>{{ flight.departure_time }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No flight records found for this customer.</p>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const message = document.getElementById('flash_message');
+        const displayTime = message ? message.innerText.length * 500 : 5000; // 每个字符100ms
+        setTimeout(() => {
+            if (message) message.style.display = 'none';
+        }, displayTime);
+
+    </script>
+
+
+</body>
+</html>
+
+
+
+

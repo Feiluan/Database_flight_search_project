@@ -755,36 +755,6 @@ def staff_dashboard():
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-   
-
-    # query = """
-    #     SELECT p.customer_email, COUNT(*) as ticket_count
-    #     FROM purchases p
-    #     JOIN ticket t ON p.ticket_id = t.ticket_id
-    #     WHERE p.booking_agent_id = %s
-    #     GROUP BY p.customer_email
-    #     ORDER BY ticket_count DESC
-    #     LIMIT 5;
-    # """
-    # cursor.execute(query, (staff_id))
-    # top_customers_ticket = cursor.fetchall()
-    # print('top customer ticket:', top_customers_ticket)
-    
-    # top_customers_ticket_json = json.dumps(top_customers_ticket)
-    # print('top customer ticket json:',top_customers_ticket_json)
-
-
     #view top 5 booking agent 买票最多功能,分last month和year
     query_tickets_month = """
         SELECT ba.email AS agent_email, COUNT(p.ticket_id) AS ticket_sales
@@ -802,9 +772,6 @@ def staff_dashboard():
     top_ticket_booking_agents_month_json = json.dumps(top_ticket_booking_agents_month)
     print('top customer ticket month json:',top_ticket_booking_agents_month_json)
 
-
-
-
     query_tickets_year = """
         SELECT ba.email AS agent_email, COUNT(p.ticket_id) AS ticket_sales
         FROM booking_agent ba
@@ -820,8 +787,6 @@ def staff_dashboard():
 
     top_ticket_booking_agents_year_json = json.dumps(top_ticket_booking_agents_year)
     print('top customer ticket year json:',top_ticket_booking_agents_year_json)
-
-
 
     #view top 5 booking agent commission最多功能
     query_commissions = """
@@ -844,18 +809,33 @@ def staff_dashboard():
     
     top_commission_booking_agents_json = json.dumps(top_commission_booking_agents)
     print('top customer ticket json:',top_commission_booking_agents_json)
+    print()
+    #view top 5 booking agent
+    
+    
 
-    
-    
-    # query = """
-    #     SELECT bf.email, booking_agent.booking_agent_id, bf.airline_name
-    #     FROM booking_agent_work_for AS bf
-    #     JOIN booking_agent ON bf.email = booking_agent.email
-    #     WHERE bf.airline_name = %s 
-    # """
-    # cursor.execute(query, (staff_airline, ) )
-    # airline_booking_agent = cursor.fetchall()
-    # print('airline booking agent:', airline_booking_agent)
+
+
+
+    #view most frequent customer
+    query_frequent_customer = """
+        SELECT p.customer_email, COUNT(*) AS flight_count
+        FROM purchases p
+        JOIN ticket t ON p.ticket_id = t.ticket_id
+        JOIN flight f ON t.airline_name = f.airline_name AND t.flight_num = f.flight_num
+        WHERE f.airline_name = %s
+        AND p.purchase_date BETWEEN DATE_SUB(NOW(), INTERVAL 1 YEAR) AND NOW()
+        GROUP BY p.customer_email
+        ORDER BY flight_count DESC
+        LIMIT 1;
+    """
+    cursor.execute(query_frequent_customer, (staff_airline,))
+    most_frequent_customer = cursor.fetchone()
+    print("frequent_customer:",most_frequent_customer)
+
+
+
+
 
 
     
@@ -863,15 +843,18 @@ def staff_dashboard():
     #view top 5 booking agent功能
     airline_booking_agent = []
     print()
-    
 
+    db.commit()
+    cursor.close()
+    
     return render_template('dashboard/staff.html', airline_booking_agent = airline_booking_agent, airline_flight = airline_flight, 
                            flight_start_date = flight_start_date, flight_end_date = flight_end_date,
                            flight_departure_airport = flight_departure_airport, flight_arrival_airport = flight_arrival_airport,
                            flight_status_selector = flight_status_selector,
                            top_ticket_booking_agents_month = top_ticket_booking_agents_month_json, 
                            top_ticket_booking_agents_year = top_ticket_booking_agents_year_json, 
-                           top_commission_booking_agents =  top_commission_booking_agents_json)
+                           top_commission_booking_agents =  top_commission_booking_agents_json,
+                           frequent_customer = most_frequent_customer)
 
 
 
@@ -907,6 +890,30 @@ def passengers():
     print("this is passengers for this flight:", passengers)
 
     return render_template('passengers.html',passengers = passengers, flight_num = flight_num)
+
+
+@app.route('/customer_history', methods=['GET','POST'])
+def frequent_customers():
+    cursor = db.cursor(dictionary=True)
+    customer_email = request.form.get('customer_email')
+
+    if not customer_email:
+        flash("Please provide a valid email address.", "danger")
+        return redirect('/dashboard/staff')  # 返回到某个默认页面
+
+    # 查询数据库获取与该客户相关的飞行记录
+    query = """
+        SELECT ticket.ticket_id, ticket.flight_num, flight.departure_time
+        FROM ticket
+        JOIN purchases ON ticket.ticket_id = purchases.ticket_id
+        JOIN flight ON flight.flight_num = ticket.flight_num
+        WHERE purchases.customer_email = %s
+    """
+    cursor.execute(query, (customer_email,))
+    flight_history = cursor.fetchall()
+    print("this is flight history for customer", flight_history)
+
+    return render_template('customer_history.html', flight_history=flight_history, customer_email=customer_email)
 
 
 @app.route('/logout')

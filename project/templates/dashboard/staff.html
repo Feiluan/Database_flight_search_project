@@ -118,18 +118,42 @@
             gap: 20px; /* 两个图表之间的间距 */
             margin: 20px 0; /* 上下间距 */
         }
-
         .view_top_ticket_booking_agents_chart_canvas {
             flex: 1; /* 每个子元素平分可用空间 */
             max-width: 50%; /* 确保宽度不会超过容器的 50% */
             box-sizing: border-box; /* 包括 padding 和 border 在宽度计算内 */
         }
-
         .view_top_ticket_booking_agents_month_chart, 
         .view_top_ticket_booking_agents_year_chart {
             width: 100%; /* 子元素内容填充父容器 */
             height: auto; /* 根据需要自动调整高度 */
         }
+
+
+
+
+        
+        .view_most_frequent_customer_container,
+        .view_specific_customer_history_container {
+            display: flex; /* 使用 flexbox 将标题和内容排列在一行 */
+            gap: 1em; /* 标题和内容之间的间距 */
+            align-items: center; /* 垂直居中对齐 */
+            justify-content: center; /* 水平居中 */
+            font-weight: normal; /* 设置普通字体 */
+            font-size: 16px; /* 调整字体大小 */
+            line-height: 1.5; /* 调整行高 */
+        }
+
+        .frequent_customer_info {
+            display: flex; /* 内容本身也按行排列 */
+            gap: 1em; /* 添加 Email 和 Flights Taken 之间的间距 */
+        }
+
+        .frequent_customer_info span {
+            white-space: nowrap; /* 防止内容换行 */
+        }
+
+
 
 
         
@@ -199,8 +223,6 @@
                 <button id="admin" onclick="window.location.href='/admin.html'">Admin</button>
                 <button id="operator" onclick="window.location.href='/operator.html'">Operator</button>
             </div>
-
-
 
             <div id="default_form" class="form_section active">
                 <div class="view_airline_flight">
@@ -295,65 +317,60 @@
                 </div>
 
 
-
                 <div class="view_booking_agents">
                     <div class="view_booking_agents_header">
                         <h3>View the booking agent ranking of {{ session['user']['airline_name'] }}</h3>
                     </div>
 
                     <div class="view_booking_agents_chart">
-
-                        
                         <div class="view_top_ticket_booking_agents_chart_canvas">
                             <canvas id="view_top_ticket_booking_agents_month_chart"></canvas>
                             <canvas id="view_top_ticket_booking_agents_year_chart"></canvas>
                         </div>
-                        <!-- <button id="view_top_ticket_booking_agents_chart_switch" onclick="toggleTable()">Switch to Past Year</button> -->
-                    
+                                            
                         <div class="view_top_commission_booking_agents_chart_canvas">
                             <canvas id="view_top_commission_booking_agents_chart"></canvas>
                         </div>
-
                     </div>
 
+                </div>
 
+                <div class="view_frequent_customers">
+                    <div class="view_frequent_customers_header">
+                        <h3>View frequent customers of {{ session['user']['airline_name'] }}</h3>
+                    </div>
 
-
-
-
-
-
-
-
-
-
-
-
-                    <div class="view_booking_agents_container">
-                        {% if airline_booking_agent %}
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Email</th>
-                                        <th>Booking agent id</th>
-                                        <th>Airline name</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for booking_agent in airline_booking_agent %}
-                                    <tr>
-                                        <td>{{ booking_agent.email }}</td>
-                                        <td>{{ booking_agent.booking_agent_id }}</td>
-                                        <td>{{ booking_agent.airline_name }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                    <div class="view_most_frequent_customer_container">
+                        {% if frequent_customer %}
+                            <h4>Most Frequent Customer (Past Year):</h4>
+                            <div class="frequent_customer_info">
+                                <span>{{ frequent_customer.customer_email }}</span>
+                                <span>Flights Taken: {{ frequent_customer.flight_count }}</span>
+                            </div>
                         {% else %}
-                            <p>There isn't any booking agent works for your airline yet.</p>
+                            <h3>Most Frequent Customer (Past Year):</h3>
+                            <div class="frequent_customer_info">
+                                <span>No frequent customer data available for the past year.</span>
+                            </div>
                         {% endif %}
                     </div>
+
+                    <div class="view_specific_customer_history">
+                        <div class="view_specific_customer_history_container">
+                            <div class="view_specific_customer_history_header">
+                                <h4>Search Flights for a Specific Customer by email:</h4>
+                            </div>
+                            <form method="POST" action="/customer_history">
+                                <input type="email" id="customer_email" name="customer_email" required>
+                                <button type="submit">Search flight history</button>
+                            </form>
+                        </div>
+                    </div>
+                    
                 </div>
+
+                
+
                 
             </div>
 
