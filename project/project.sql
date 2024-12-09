@@ -10,14 +10,15 @@ CREATE TABLE `airline` (
 --
 
 CREATE TABLE `airline_staff` (
-  `email` varchar(50) NOT NULL,
+  `email` varchar(50) NOT NULL,   --Username
   `password` varchar(200) NOT NULL,
   `first_name` varchar(50) NOT NULL,
   `last_name` varchar(50) NOT NULL,
   `date_of_birth` date NOT NULL,
   `airline_name` varchar(50) NOT NULL,
-  PRIMARY KEY(`email`),
-  FOREIGN KEY(`airline_name`) REFERENCES `airline`(`airline_name`)
+  `admin` BOOLEAN NOT NULL DEFAULT FALSE,
+  PRIMARY KEY (`email`),
+  FOREIGN KEY (`airline_name`) REFERENCES `airline` (`airline_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
@@ -151,6 +152,6 @@ CREATE TABLE `purchases` (
   `passport_expiration` date NOT NULL,
   `passport_country` varchar(50) NOT NULL,
   `date_of_birth` date NOT NULL,
-  PRIMARY KEY (`ticket_id`, `customer_email`),
-  FOREIGN KEY (`ticket_id`) REFERENCES `ticket`(`ticket_id`)
+  PRIMARY KEY (`ticket_id`, `passport_number`), 
+  FOREIGN KEY (`ticket_id`) REFERENCES `ticket`(`ticket_id`),
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;

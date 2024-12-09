@@ -13,7 +13,8 @@ app.secret_key = 'key' #不配置这条会报错
 db = mysql.connector.connect(host='localhost',
                             user='root',
                             password='',
-                            database='finalproject')
+                            database='finalproject',
+                            port=3307)
 
 @app.route('/')
 def home():
@@ -59,7 +60,7 @@ def register():
                 """
 
             if form_type == 'customer':
-                customer_email = request.form.get('customer_email').lower().split('@')[0] + '@' + request.form.get('customer_email').split('@')[1]
+                customer_email = request.form.get('customer_email').lower().split('@')[0] + '@' + request.form.get('customer_email').lower().split('@')[1]
                 customer_name = request.form.get('customer_name')
                 customer_password = request.form.get('customer_password')
                 customer_building_number = request.form.get('customer_building_number')
@@ -108,7 +109,7 @@ def register():
                 return redirect(url_for('register'))  # 注册成功后重定向到主页或其他页面
             
             elif form_type == 'agent':
-                agent_email = request.form.get('agent_email').lower().split('@')[0] + '@' + request.form.get('agent_email').split('@')[1]
+                agent_email = request.form.get('staff_email').lower().split('@')[0] + '@' + request.form.get('staff_email').lower().split('@')[1]
                 agent_password = request.form.get('agent_password')
                 agent_id = request.form.get('agent_id')
 
@@ -144,7 +145,7 @@ def register():
                 return redirect(url_for('register'))
             
             elif form_type == 'staff':
-                staff_email = request.form.get('staff_email').lower().split('@')[0] + '@' + request.form.get('staff_email').split('@')[1]
+                staff_email = request.form.get('agent_email').split('@')[0]     #看似是email但是实际上只使用@前的字段作为用户名
                 staff_password = request.form.get('staff_password')
                 staff_first_name = request.form.get('staff_first_name')
                 staff_last_name = request.form.get('staff_last_name')
@@ -224,7 +225,7 @@ def login():
             if identity == 'customer':
                 print(f"Redirecting to {identity}_dashboard")
                 return redirect(url_for('customer_dashboard'))
-                print(f"Redirecting to {identity}_dashboard")
+                # print(f"Redirecting to {identity}_dashboard")
             elif identity == 'agent':
                 session['user']['agent_id'] = user['booking_agent_id']
                 print(session)
@@ -265,6 +266,7 @@ def login():
         #     cursor.close()
 
     return render_template('login.html')
+
 
 
 @app.route('/dashboard/customer', methods=['GET', 'POST'])
@@ -460,6 +462,35 @@ def customer_dashboard():
     return render_template('dashboard/customer.html', 
                            booked_flights = booked_flights, start_date = start_date, end_date = end_date,
                            money_spend = money_spend, monthly_spending = monthly_spending_json, money_time_range_label = money_time_range_label)
+
+@app.route('/cancel/<ticket_id>', methods=['POST'])
+def cancel_ticket(ticket_id):
+    if 'user' not in session:
+        return redirect(url_for('login'))
+
+    customer_email = session['user']['email']
+    cursor = db.cursor()
+
+    try:
+        # 删除购买记录
+        cursor.execute("DELETE FROM purchases WHERE ticket_id = %s AND customer_email = %s", (ticket_id, customer_email))
+
+        # 删除票务记录
+        cursor.execute("DELETE FROM ticket WHERE ticket_id = %s", (ticket_id,))
+        db.commit()
+
+        flash("Flight successfully canceled.", "success")
+    except Exception as e:
+        db.rollback()
+        flash("An error occurred while canceling the flight. Please try again.", "danger")
+        # print(f"Error: {e}")
+    finally:
+        cursor.close()
+
+    return redirect(url_for('customer_dashboard'))
+
+
+
 
 
 @app.route('/dashboard/agent', methods=['GET', 'POST'])
@@ -686,7 +717,7 @@ def staff_dashboard():
 
 
 
-    #View all the flights of airline功能
+    # View all the flights of airline功能
     flight_start_date = request.args.get('flight_start_date')
     flight_end_date = request.args.get('flight_end_date')
     flight_departure_airport = request.args.get('flight_departure_airport')
@@ -751,13 +782,6 @@ def staff_dashboard():
     airline_flight = cursor.fetchall()
     # print(airline_flight)
     #View all the flights of airline功能
-
-
-
-
-
-
-
 
 
 
@@ -1092,33 +1116,6 @@ def purchase_flight(flight_num):
     else:
         flash("Only customers and agents can purchase flights.", "danger")
         return redirect(url_for('home'))
-
-
-@app.route('/cancel/<ticket_id>', methods=['POST'])
-def cancel_ticket(ticket_id):
-    if 'user' not in session:
-        return redirect(url_for('login'))
-
-    customer_email = session['user']['email']
-    cursor = db.cursor()
-
-    try:
-        # 删除购买记录
-        cursor.execute("DELETE FROM purchases WHERE ticket_id = %s AND customer_email = %s", (ticket_id, customer_email))
-
-        # 删除票务记录
-        cursor.execute("DELETE FROM ticket WHERE ticket_id = %s", (ticket_id,))
-        db.commit()
-
-        flash("Flight successfully canceled.", "success")
-    except Exception as e:
-        db.rollback()
-        flash("An error occurred while canceling the flight. Please try again.", "danger")
-        # print(f"Error: {e}")
-    finally:
-        cursor.close()
-
-    return redirect(url_for('customer_dashboard'))
 
 
 if __name__ == '__main__':

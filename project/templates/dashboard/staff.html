@@ -10,7 +10,6 @@
             text-align: center;
             padding-top: 8vh;
         }
-
         .headline {
             width: 100%;               /* 占满整个屏幕宽度 */
             height: 8vh;               
@@ -124,7 +123,7 @@
     <div class="headline">
         <h1>Staff Center</h1>
         <span style="font-size: 14px; color: gray;">
-            Welcome, {{ session['user']['email'] }} <!-- 或者是 session['user']['username'] 如果你存的是用户名 -->
+            Welcome, {{ session['user']['email'].split('@')[0] }} <!-- 或者是 session['user']['username'] 如果你存的是用户名 -->
         </span>
         <div class="button-container">
             <button onclick="window.location.href='/'">Home Page</button>
