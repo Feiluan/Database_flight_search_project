@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Flight</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            text-align: center;
+            padding-top: 50px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div id="flash_message">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+    <div class="container">
+        <h1>Add Flight</h1>
+        <form action="{{ url_for('add_flight') }}" method="POST">
+            <label for="flight_num">Flight Number:</label>
+            <input type="text" id="flight_num" name="flight_num" required>
+
+            <label for="departure_airport">Departure Airport:</label>
+            <input type="text" id="departure_airport" name="departure_airport" required>
+
+            <label for="arrival_airport">Arrival Airport:</label>
+            <input type="text" id="arrival_airport" name="arrival_airport" required>
+
+            <label for="departure_time">Departure Time:</label>
+            <input type="datetime-local" id="departure_time" name="departure_time" required>
+
+            <label for="arrival_time">Arrival Time:</label>
+            <input type="datetime-local" id="arrival_time" name="arrival_time" required>
+
+            <label for="price">Price:</label>
+            <input type="number" id="price" name="price" required>
+
+            <label for="status">Status:</label>
+            <select id="status" name="status" required>
+                <option value="Upcoming">Upcoming</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Delayed">Delayed</option>
+                <option value="Completed">Completed</option>
+            </select>
+
+            <button type="submit">Add Flight</button>
+        </form>
+        <!-- 显示飞机的航班安排 -->
+        <h2>Airplane ID: {{ airplane_id }}</h2>
+        <h3>Flight Schedule</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Flight Number</th>
+                    <th>Departure Airport</th>
+                    <th>Arrival Airport</th>
+                    <th>Departure Time</th>
+                    <th>Arrival Time</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for flight in flights %}
+                <tr>
+                    <td>{{ flight.flight_num }}</td>
+                    <td>{{ flight.departure_airport }}</td>
+                    <td>{{ flight.arrival_airport }}</td>
+                    <td>{{ flight.departure_time }}</td>
+                    <td>{{ flight.arrival_time }}</td>
+                    <td>${{ flight.price }}</td>
+                    <td>{{ flight.status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

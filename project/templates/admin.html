@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            text-align: center;
+            padding-top: 8vh;
+        }
+        .headline {
+            width: 100%;               /* 占满整个屏幕宽度 */
+            height: 8vh;               
+            background-color: #fff;                 
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 给白色条添加阴影 */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;           /* 固定在顶部 */
+            top: 0;
+            left: 0;
+            z-index: 1000;             /* 确保在页面的最前面 */
+            box-sizing: border-box;
+            flex-shrink: 0;
+            padding: 0 40px;
+        }
+        .flash {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .flash.success { background-color: #d4edda; color: #155724; }
+        .flash.error { background-color: #f8d7da; color: #721c24; }
+        .flash.danger { background-color: #f8d7da; color: #721c24; }
+
+        button {
+            background-color: #007BFF;
+            color: #fff;
+            padding: 10px 16px;
+            margin: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 4vh;
+        }
+
+        .permission-layout  {
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        .permission-header {
+            /* 固定宽度占 30%,左对齐文本 */
+            flex: 0 0 30%; 
+            text-align: center; 
+        }
+        .permission-container{
+            /*固定宽度占 70% */
+            flex: 0 0 70%; 
+            display: flex; 
+            justify-content: left; 
+            gap: 15px; 
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+
+
+        
+        /* Media queries for responsive behavior */
+        @media (max-width: 320px) {
+            .headline {
+                display: none; /* Hide the headline when the screen is very small (1/4 size) */
+            }
+        }
+
+        @media (min-width: 1920px) {
+            .headline {
+                height: 8vh; /* Keep fixed height for larger screens */
+            }
+        }
+
+
+    </style>
+</head>
+<body>
+    <div class="headline">
+        <h1>Admin Panel</h1>
+        <button onclick="window.location.href='/'">Home Page</button>
+    </div>
+    <div id="flash_message">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+    <div class="container">
+        <!-- <h2>Manage Airline</h2> -->
+
+        <h3>Grant Permission</h3>
+        <form action="{{ url_for('admin') }}" method="POST">
+            <input type="hidden" name="action" value="grant_permission">
+            <label for="staff_email">Staff Email:</label>
+            <input type="email" id="staff_email" name="staff_email" required>
+            <label for="permission_type"style="display: inline-block; margin-left: 60px;">Permission Type:</label>
+            <select id="permission_type" name="permission_type" required>
+                <option value="Admin">Admin</option>
+                <option value="Operator">Operator</option>
+            </select>
+            <button type="submit"style="display: inline-block; margin-left: 20px; margin-right: -100px;">Grant Permission</button>
+        </form>
+
+        <!-- Add Airplane Form -->
+        <h3>Add Airplane</h3>
+        <form action="{{ url_for('admin') }}" method="POST">
+            <input type="hidden" name="action" value="add_airplane">
+            <label for="airplane_id">Airplane ID:</label>
+            <input type="text" id="airplane_id" name="airplane_id" required>
+            <label for="seats"style="display: inline-block; margin-left: 100px;">Seats:</label>
+            <input type="number" id="seats" name="seats" required>
+            <button type="submit"style="display: inline-block; margin-right: -80px;">Add Airplane</button>
+        </form>
+   
+
+        <!-- Add Airport Form -->
+        <h3>Add Airport</h3>
+        <form action="{{ url_for('admin') }}" method="POST">
+            <input type="hidden" name="action" value="add_airport">
+            <label for="airport_name"style="display: inline-block; margin-left: -20px;">Airport Name:</label>
+            <input type="text" id="airport_name" name="airport_name" required>
+            <label for="airport_city"style="display: inline-block; margin-left: 60px;">Airport City:</label>
+            <input type="text" id="airport_city" name="airport_city" required>
+            <button type="submit"style="display: inline-block; margin-left: 20px;margin-right: -80px;">Add Airport</button>
+        </form>
+
+        <!-- Add Booking Agent Form -->
+        <h3>Add Booking Agent</h3>
+        <form action="{{ url_for('admin') }}" method="POST">
+            <input type="hidden" name="action" value="add_agent">
+            <label for="agent_email"style="display: inline-block; margin-right: 60px;">Agent Email:</label>
+            <input type="email" id="agent_email" name="agent_email" required>
+            <button type="submit"style="display: inline-block; margin-left: 80px; margin-right: -270px;">Add Agent</button>
+        </form>
+        
+
+        <!-- Airplane List -->
+        <h3>All Airplanes</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 30%;">Airplane ID</th>
+                    <th style="width: 30%;">Seats</th>
+                    <th style="width: 15%;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for airplane in airplanes %}
+                <tr>
+                    <td>{{ airplane.airplane_id }}</td>
+                    <td>{{ airplane.seats }}</td>
+                    <td>
+                        <a href="{{ url_for('add_flight', airplane_id=airplane.airplane_id) }}">
+                            <button type="button">Add Flights</button>
+                        </a>
+                    </td>
+                    
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

@@ -825,9 +825,136 @@ def staff_dashboard():
                            flight_status_selector = flight_status_selector)
 
 
-@app.route('/admin', methods = ['GET','POST'])
+@app.route('/admin', methods=['GET', 'POST'])
 def admin():
-    return render_template('admin.html')
+    # print('\n', session['user']['permissions'])
+    if 'user' not in session or session['user']['identity'] != 'staff' or 'Admin' not in session['user']['permissions']:
+        flash("You do not have the required admin permissions.", "danger")
+        return redirect(url_for('login'))
+
+    cursor = db.cursor(dictionary=True)
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'add_airplane':
+            airplane_id = request.form.get('airplane_id')
+            airline_name = session['user']['airline_name']
+            seats = request.form.get('seats')
+
+            if not all([airplane_id, airline_name, seats]):
+                flash("All fields are required to add a new airplane.", "danger")
+            else:
+                cursor.execute("""
+                    INSERT INTO airplane (airplane_id, airline_name, seats)
+                    VALUES (%s, %s, %s)
+                """, (airplane_id, airline_name, seats))
+                db.commit()
+                flash("Airplane added successfully!", "success")
+
+        elif action == 'add_airport':
+            airport_name = request.form.get('airport_name')
+            airport_city = request.form.get('airport_city')
+
+            if not all([airport_name, airport_city]):
+                flash("All fields are required to add a new airport.", "danger")
+            else:
+                cursor.execute("""
+                    INSERT INTO airport (airport_name, airport_city)
+                    VALUES (%s, %s)
+                """, (airport_name, airport_city))
+                db.commit()
+                flash("Airport added successfully!", "success")
+
+        elif action == 'add_agent':
+            agent_email = request.form.get('agent_email')
+
+            if not agent_email:
+                flash("Agent email is required.", "danger")
+            else:
+                cursor.execute("""
+                    INSERT INTO booking_agent_work_for (email, airline_name)
+                    VALUES (%s, %s)
+                """, (agent_email, session['user']['airline_name']))
+                db.commit()
+                flash("Booking agent added successfully!", "success")
+
+        elif action == 'grant_permission':
+            staff_email = request.form.get('staff_email')
+            permission_type = request.form.get('permission_type')
+
+            if not all([staff_email, permission_type]):
+                flash("All fields are required to grant permissions.", "danger")
+            else:
+                cursor.execute("""
+                    INSERT INTO permission (email, permission_type)
+                    VALUES (%s, %s)
+                """, (staff_email, permission_type))
+                db.commit()
+                flash(f"Permission '{permission_type}' granted to {staff_email}.", "success")
+
+    # Fetch all airplanes
+    cursor.execute("""
+        SELECT airplane_id, seats
+        FROM airplane
+        WHERE airline_name = %s
+    """, (session['user']['airline_name'],))
+    airplanes = cursor.fetchall()
+
+    cursor.close()
+    return render_template('admin.html', airplanes=airplanes)
+
+
+@app.route('/add_flight', methods=['GET', 'POST'])
+def add_flight():
+    if 'user' not in session or session['user']['identity'] != 'staff' or 'Admin' not in session['user']['permissions']:
+        flash("You do not have the required admin permissions to add flights.", "danger")
+        return redirect(url_for('login'))
+    airplane_id = request.args.get('airplane_id')
+
+    if airplane_id:
+        session['airplane_id'] = airplane_id
+        print("Saving Airplane ID:", airplane_id) 
+    
+    if not airplane_id and not session['airplane_id']:
+        flash("Airplane ID is required to add a flight.", "danger")
+        return redirect(url_for('admin'))
+    
+    print("Current Airplane ID:", airplane_id)
+
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT flight_num, departure_airport, arrival_airport, departure_time, arrival_time, price, status
+        FROM flight
+        WHERE airplane_id = %s AND status != 'Completed'
+        ORDER BY departure_time ASC
+    """, (airplane_id,))
+    flights = cursor.fetchall()
+        
+    if request.method == 'POST':
+        airline_name = session['user']['airline_name']
+        flight_num = request.form.get('flight_num')
+        departure_airport = request.form.get('departure_airport')
+        arrival_airport = request.form.get('arrival_airport')
+        departure_time = request.form.get('departure_time')
+        arrival_time = request.form.get('arrival_time')
+        price = request.form.get('price')
+        status = request.form.get('status')
+        airplane_id = session['airplane_id']
+
+        print("Inserting Airplane ID:", airplane_id) 
+        cursor = db.cursor()
+        cursor.execute("""
+            INSERT INTO flight (airline_name, flight_num, departure_airport, arrival_airport, departure_time, arrival_time, price, status, airplane_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (airline_name, flight_num, departure_airport, arrival_airport, departure_time, arrival_time, price, status, airplane_id))
+        db.commit()
+        cursor.close()
+        flash("Flight added successfully!", "success")
+        return redirect(url_for('admin'))
+
+    return render_template('add_flight.html', airplane_id=airplane_id, flights=flights)
+
 
 
 @app.route('/passengers', methods = ['GET', 'POST'])
