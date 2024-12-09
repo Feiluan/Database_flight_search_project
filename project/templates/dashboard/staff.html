@@ -172,20 +172,34 @@
                     <div class="view_airline_flight_filter">
 
                         <form method="GET" action="/dashboard/staff">
-                            <label for="flight_end_date">Start Date:</label>
+                            <label for="flight_start_date">Start Date:</label>
                             <input type="date" id="flight_start_date" name="flight_start_date" 
-                                value="{{ start_date if start_date else '' }}"
-                                onchange="updateEndDateMin()" required>
+                                value="{{ flight_start_date if flight_start_date else '' }}"
+                                onchange="updateEndDateMin()">
+
                             <label for="flight_end_date">End Date:</label>
                             <input type="date" id="flight_end_date" name="flight_end_date" 
-                                value="{{ end_date if end_date else '' }}"  
-                                onchange="updateStartDateMax()" required>
-                                <label for="flights_status">Status:</label>
-                            <select name="flight_status">
-                                <option value="">All</option>
-                                <option value="upcoming">Upcoming</option>
-                                <option value="completed">Completed</option>
-                                <option value="cancelled">Cancelled</option>
+                                value="{{ flight_end_date if flight_end_date else '' }}"  
+                                onchange="updateStartDateMax()">
+
+                            <label for="departure_airport">Departure Airport:</label>
+                            <input type="text" id="flight_departure_airport" name="flight_departure_airport" 
+                                value="{{ flight_departure_airport if flight_departure_airport else '' }}" 
+                                placeholder="Enter departure airport">
+                            
+                            <label for="arrival_airport">Arrival Airport:</label>
+                            <input type="text" id="flight_arrival_airport" name="flight_arrival_airport" 
+                                value="{{ flight_arrival_airport if flight_arrival_airport else '' }}" 
+                                placeholder="Enter arrival airport">
+                    
+
+                            <label for="flights_status">Status:</label>
+                            <select name="flight_status_selector">
+                                <option value="*" {% if flight_status_selector == "*" %}selected{% endif %}>All</option>
+                                <option value="upcoming" {% if flight_status_selector == "upcoming" %}selected{% endif %}>Upcoming</option>
+                                <option value="delayed" {% if flight_status_selector == "delayed" %}selected{% endif %}>Delayed</option>
+                                <option value="in_progress" {% if flight_status_selector == "in_progress" %}selected{% endif %}>In Progress</option>
+                                <!-- <option value="completed" {% if flight_status_selector == "completed" %}selected{% endif %}>Completed</option> -->
                             </select>
                             <button type="submit">Filter</button>
                             <button type="submit" name="clear_filter" value="true">Clear Filters</button>
@@ -195,11 +209,10 @@
                     </div>
 
                     <div class="view_airline_flights_container">
-                        {% if booked_flights %}
+                        {% if airline_flight %}
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Customer email</th>
                                         <th>Airline</th>
                                         <th>Flight Number</th>
                                         <th>Departure Airport</th>
@@ -210,9 +223,8 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for flight in booked_flights %}
+                                    {% for flight in airline_flight %}
                                     <tr>
-                                        <td>{{ flight.customer_email }}</td>
                                         <td>{{ flight.airline_name }}</td>
                                         <td>{{ flight.flight_num }}</td>
                                         <td>{{ flight.departure_airport }}</td>
@@ -225,14 +237,9 @@
                                 </tbody>
                             </table>
                         {% else %}
-                            <p>There aren't any flights scheduled in this airline yet.</p>
+                            <p>There aren't any flights scheduled in this airline yet or there isn't any flights scheduled in this filter status yet.</p>
                         {% endif %}
                     </div>
-        
-
-
-
-
 
                 </div>
 
@@ -302,23 +309,27 @@
 
         
         function updateEndDateMin() {
-            // Start Date 
-            const startDate = document.getElementById('start_date').value;
-            const endDateInput = document.getElementById('end_date');
+            // 获取 Start Date 和 End Date 的元素
+            const startDate = document.getElementById('flight_start_date').value;
+            const endDateInput = document.getElementById('flight_end_date');
 
-            if (startDate) { endDateInput.min = startDate; }
+            if (startDate) { 
+                endDateInput.min = startDate; 
+            }
         }
 
         function updateStartDateMax() {
-            const endDate = document.getElementById('end_date').value;
-            const startDateInput = document.getElementById('start_date');
+            const endDate = document.getElementById('flight_end_date').value;
+            const startDateInput = document.getElementById('flight_start_date');
 
-            if (endDate) { startDateInput.max = endDate; }
+            if (endDate) { 
+                startDateInput.max = endDate; 
+            }
         }
 
         function validateDates() {
-            const startDate = document.getElementById('start_date').value;
-            const endDate = document.getElementById('end_date').value;
+            const startDate = document.getElementById('flight_start_date').value;
+            const endDate = document.getElementById('flight_end_date').value;
 
             // 如果 Start Date 大于 End Date，阻止表单提交
             if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
@@ -327,6 +338,7 @@
             }
             return true; 
         }
+
     </script>
 
 

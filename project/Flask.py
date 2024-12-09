@@ -13,8 +13,7 @@ app.secret_key = 'key' #不配置这条会报错
 db = mysql.connector.connect(host='localhost',
                             user='root',
                             password='',
-                            database='finalproject',
-                            port=3307)
+                            database='finalproject',)
 
 @app.route('/')
 def home():
@@ -235,12 +234,15 @@ def login():
                 session['user']['airline_name'] = user['airline_name']
                 cursor.execute("SELECT permission_type FROM permission WHERE email = %s", (email,))
                 permissions = cursor.fetchall()
-                print("permissions",permissions)
+                # print("permission get from database",permissions)
 
-                permission_types = [permission['permission_type'] for permission in permissions]
-                combined_permissions = ', '.join(permission_types)
-                session['user']['permissions'] = [{'permission_type': combined_permissions}]
-
+                if permissions:
+                    # 提取权限类型的值
+                    session['user']['permissions'] = [permission['permission_type'] for permission in permissions]
+                else:
+                    session['user']['permissions'] = []  # 没有权限时为空列表
+                # print("permissions after processing:", session['user']['permissions'])   
+                             
                 # 权限为空 设置一个默认值
                 if not session['user']['permissions']:
                     session['user']['permissions'] = ['None']
@@ -576,6 +578,7 @@ def agent_dashboard():
             
         query = """
             SELECT 
+                p.customer_email,
                 f.airline_name,
                 f.flight_num,
                 f.departure_airport,
@@ -697,36 +700,105 @@ def staff_dashboard():
 
     print("permission:",staff_permission)
     print("staff airline name:",staff_airline)
+    print()
 
 
     # if request.method == 'POST':
     form_type = request.form.get('form_type')
     print("form_type:", form_type)
+    print()
+
+   
+
 
 
     # if form_type == 'default':
+    
+    #View all the flights of airline功能
+   
 
-    flight_start_date = request.args.get('start_date')
-    flight_end_date = request.args.get('end_date')
-    status_filter = request.args.get('status')
+    flight_start_date = request.args.get('flight_start_date')
+    flight_end_date = request.args.get('flight_end_date')
+    flight_departure_airport = request.args.get('flight_departure_airport')
+    flight_arrival_airport = request.args.get('flight_arrival_airport')
+    flight_status_selector = request.args.get('flight_status_selector')
 
+    #clear_filter用，传递上一次按filter selector的日期
+    clear_filter = request.args.get('clear_filter', False)
+    if clear_filter:
+        flight_start_date = None
+        flight_end_date = None
+        flight_departure_airport = None
+        flight_arrival_airport = None
+        flight_status_selector = None
+    
     now = datetime.now()
     default_flight_start_date = now
     default_flight_end_date = now + timedelta(days=30)
+    default_status = 'Upcoming'
 
-    query_start_date = flight_start_date if flight_start_date else default_flight_start_date.strftime('%Y-%m-%d')
-    query_end_date = flight_end_date if flight_end_date else default_flight_start_date.strftime('%Y-%m-%d')
-    query_status = status_filter if status_filter else 'upcoming'
-
-    print("datetime test:",query_start_date,query_end_date,query_status)
-
-
-
-
+    query = """
+        SELECT * 
+        FROM flight
+        WHERE airline_name = %s
+    """
+    search_condition = [staff_airline]
 
 
 
+    
 
+
+    if flight_start_date or flight_end_date:
+        # 输入了时间范围，不限制 status
+        query += " AND departure_time BETWEEN %s AND %s"
+        search_condition.append(flight_start_date if flight_start_date else default_flight_start_date)
+        search_condition.append(flight_end_date if flight_end_date else default_flight_end_date)
+        print("this is query1:",query)
+        print("this is the search condition1:",staff_airline, flight_start_date, flight_end_date)
+        if flight_start_date and flight_end_date:
+            if (flight_start_date > flight_end_date):
+                flash('Start Date cannot be later than End Date!', 'danger')
+
+    else:
+        # 使用默认时间范围
+        query += " AND departure_time BETWEEN %s AND %s"
+        search_condition.append(default_flight_start_date)
+        search_condition.append(default_flight_end_date)
+        print("this is query2:",query)
+        print("this is the search condition2:",staff_airline, default_flight_start_date, default_flight_end_date)
+
+    if flight_status_selector and flight_status_selector != "*":
+        query += " AND status = %s"
+        search_condition.append(flight_status_selector)
+    elif not (flight_start_date or flight_end_date):
+        # 默认状态为 'upcoming'，仅在没有用户提供时间范围时应用
+        query += " AND status = %s"
+        search_condition.append(default_status)
+    
+    if flight_departure_airport:
+        query += " AND departure_airport = %s"
+        search_condition.append(flight_departure_airport)
+
+    # 目的地条件
+    if flight_arrival_airport:
+        query += " AND arrival_airport = %s"
+        search_condition.append(flight_arrival_airport)
+
+    print()
+    print()
+    print("this is final query:",query)
+    print("this is final condidiont:", search_condition)
+    cursor.execute(query,tuple(search_condition))
+    airline_flight = cursor.fetchall()
+    print(airline_flight)
+    #View all the flights of airline功能
+
+
+
+
+
+    #view top 5 booking agent功能
 
     query = """
         SELECT bf.email, booking_agent.booking_agent_id, bf.airline_name
@@ -739,6 +811,9 @@ def staff_dashboard():
     print('airline booking agent:', airline_booking_agent)
 
 
+    
+
+    #view top 5 booking agent功能
 
 
 
@@ -747,12 +822,18 @@ def staff_dashboard():
 
 
 
-
+    print()
+    print(flight_start_date,flight_end_date)
+    print(flight_departure_airport)
+    print(flight_arrival_airport)
 
     
 
-    return render_template('dashboard/staff.html', staff_permission = staff_permission, staff_airline = staff_airline,
-                           airline_booking_agent = airline_booking_agent)
+    return render_template('dashboard/staff.html', airline_booking_agent = airline_booking_agent,
+                           airline_flight = airline_flight, 
+                           flight_start_date = flight_start_date, flight_end_date = flight_end_date,
+                           flight_departure_airport = flight_departure_airport, flight_arrival_airport = flight_arrival_airport,
+                           flight_status_selector = flight_status_selector)
 
 
 
