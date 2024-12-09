@@ -332,7 +332,7 @@ def customer_dashboard():
         flash('Please select both date!', 'danger') #已经javascript加过了但是这里也警告一下
         
     booked_flights = cursor.fetchall()
-    # print(booked_flights) 
+    print("booked flights:",booked_flights) 
 
 
 
@@ -486,6 +486,8 @@ def agent_dashboard():
     # 目前的booking_agent_work_for
     cursor.execute("SELECT airline_name FROM booking_agent_work_for WHERE email = %s", (agent_email,))
     airlines_working_for = cursor.fetchall()  
+    airlines_working_for = [record['airline_name'] for record in airlines_working_for]
+    print("this is test", airlines_working_for)
 
 
     # if request.method == 'POST':
@@ -506,9 +508,13 @@ def agent_dashboard():
 
     #     return redirect(url_for('agent_dashboard'))
 
-    
+
+
+
+
+    #View My flights
     booked_flights = []
-    
+
     #给clear_filter用，传递上一次按filter selector的日期
     clear_filter = request.args.get('clear_filter', False)
     if clear_filter:
@@ -572,26 +578,15 @@ def agent_dashboard():
     
 
 
-    # agent_id = session['user']['agent_id']
+    # View my commission
     now = datetime.now()
     if request.form.get('clear_filter'):  # 用户点击清除筛选按钮
-        start_date = (now - timedelta(days=365)).strftime('%Y-%m-%d')  # 默认过去一年
-        end_date = now.strftime('%Y-%m-%d')
-    else:  # 使用用户选择的日期范围或默认值
-        start_date = request.form.get('start_date') or (now - timedelta(days=365)).strftime('%Y-%m-%d')
-        end_date = request.form.get('end_date') or now.strftime('%Y-%m-%d')
-
-
-
-
-    
-    if request.method == 'POST':
-        my_commission_start_date = request.form.get('my_commission_start_date')
-        my_commission_end_date = request.form.get('my_commission_end_date')
-    else:
-        # 默认过去 30 天
-        my_commission_start_date = (now - timedelta(days=30)).strftime('%Y-%m-%d')
+        my_commission_start_date = (now - timedelta(days=30)).strftime('%Y-%m-%d')  # 默认过去一个月
         my_commission_end_date = now.strftime('%Y-%m-%d')
+    else:  # 使用用户选择的日期范围或默认值
+        my_commission_start_date = request.form.get('my_commission_start_date') or (now - timedelta(days=30)).strftime('%Y-%m-%d')
+        my_commission_end_date = request.form.get('my_commission_end_date') or now.strftime('%Y-%m-%d')
+
 
     query = """
         SELECT 
@@ -605,9 +600,6 @@ def agent_dashboard():
     """
     cursor.execute(query, (agent_id, my_commission_start_date, my_commission_end_date))
     my_commission = cursor.fetchone()
-    print()
-    print("my_commission:",my_commission)
-    print()
     total_commission = my_commission['total_commission'] or 0.0
     total_tickets = my_commission['total_tickets'] or 0
     average_commission = total_commission / total_tickets if total_tickets > 0 else 0.0
@@ -615,14 +607,7 @@ def agent_dashboard():
 
 
 
-
-
-
-
-
-
-
-
+    #customer的barchart两张
     # if request.method == 'POST':
     #     ticket_start_date = request.form.get('ticket_start_date')
     #     ticket_end_date = request.form.get('ticket_end_date')
@@ -653,10 +638,6 @@ def agent_dashboard():
 
 
 
-
-
-
-
     commission_end_date = datetime.now()
     commission_start_date = commission_end_date - timedelta(days=12*30)
     print()
@@ -674,7 +655,6 @@ def agent_dashboard():
         LIMIT 5;
     """
 
-
     cursor.execute(query, (agent_id, commission_start_date, commission_end_date))
     top_customers_commission = cursor.fetchall()
     print('top customer commision:', top_customers_commission)
@@ -687,22 +667,16 @@ def agent_dashboard():
     print('top customer ticket json:',top_customers_commission)
 
 
-
-
-
-
-
-
-
-
     
     cursor.close()
     return render_template('dashboard/agent.html', 
                            airlines_not_working_for=airlines_not_working_for, airlines_working_for=airlines_working_for, 
                            booked_flights = booked_flights, start_date = start_date, end_date = end_date,
-                           top_customers_ticket = top_customers_ticket_json,
-                           top_customers_commission = top_customers_commission_json,
-                           total_commission = total_commission,total_tickets = total_tickets, average_commission = average_commission)
+                           ticket_start_date = ticket_start_date,ticket_end_date = ticket_end_date,
+                           commission_start_date = commission_start_date, commission_end_date = commission_end_date,
+                           top_customers_ticket = top_customers_ticket_json, top_customers_commission = top_customers_commission_json,
+                           total_commission = total_commission,total_tickets = total_tickets, average_commission = average_commission,
+                           my_commission_start_date = my_commission_start_date, my_commission_end_date = my_commission_end_date)
 
 
 @app.route('/dashboard/staff')

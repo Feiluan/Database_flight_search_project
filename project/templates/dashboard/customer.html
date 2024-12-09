@@ -152,7 +152,7 @@
             </div>
 
             <div class="view_my_flights_container">
-                {% if airline_flight %}
+                {% if booked_flights %}
                     <table>
                         <thead>
                             <tr>
@@ -167,7 +167,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for flight in airline_flight %}
+                            {% for flight in booked_flights %}
                             <tr>
                                 <td>{{ flight.airline_name }}</td>
                                 <td>{{ flight.flight_num }}</td>
@@ -188,7 +188,7 @@
                         </tbody>
                     </table>
                 {% else %}
-                    <p>You haven't booked any ticket yet.</p>
+                    <p>We haven't found any booked ticket in the specific filter condition.</p>
                 {% endif %}
             </div>            
             
