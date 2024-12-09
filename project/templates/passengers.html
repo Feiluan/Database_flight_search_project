@@ -122,7 +122,7 @@
     </div>
 
     <div class="headline">
-        <h1>Staff Center</h1>
+        <h1>Passenger Checking</h1>
         <span style="font-size: 14px; color: gray;">
             Welcome, {{ session['user']['email'] }} <!-- 或者是 session['user']['username'] 如果你存的是用户名 -->
         </span>
@@ -136,36 +136,36 @@
 
 
 
-    
+
     <div class="container">
-        <div class="permission-layout">
-            <div class="permission-header">
-                <h3>My Permission:</h3>
-            </div>
-            <div class="permission-container">
-                {% if session['user']['permissions']  %}
-                    {% for permission in session['user']['permissions'] %}
-                        <div class="permission-card">
-                            <p>{{ permission }}</p>
-                        </div>
+        <h1>Passengers for flight {{ flight_num }}</h1>
+
+        {% if passengers %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ticket_id</th>
+                        <th>Flight Number</th>
+                        <th>Airline name</th>
+                        <th>Customer email</th>
+                        <th>Phone number</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for passenger in passengers %}
+                        <tr>
+                            <td>{{ passenger.ticket_id }}</td>
+                            <td>{{ passenger.flight_num }}</td>
+                            <td>{{ passenger.airline_name }}</td>
+                            <td>{{ passenger.customer_email }}</td>
+                            <td>{{ passenger.phone_number }}</td>
+                        </tr>
                     {% endfor %}
-                {% else %}
-                    <div class="permission-card">
-                        <p>You don't have any permission yet.</p>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="form_group">
-            <div class="selector">
-                <button id ="default">Default</button>
-                <button id ="admin">Admin</button>
-                <button id ="operator">Operator</button>
-            </div>
-            
-
-        </div>
+                </tbody>
+            </table>
+        {% else %}
+            <p>No passengers found for your search criteria.</p>
+        {% endif %}
 
     </div>
 

@@ -827,8 +827,7 @@ def passengers():
 
 
 
-    return render_template('passengers.html')
-
+    return render_template('passengers.html',passengers = passengers, flight_num = flight_num)
 
 
 @app.route('/logout')
