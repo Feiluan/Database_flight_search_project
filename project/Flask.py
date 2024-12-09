@@ -935,7 +935,7 @@ def sales_report():
         start_date = request.form.get('start_date') or (now - timedelta(days=365)).strftime('%Y-%m-%d')
         end_date = request.form.get('end_date') or now.strftime('%Y-%m-%d')
 
-
+    #动态，查询Total Sales from srart to end ，默认一年
     query = """
         SELECT 
             DATE_FORMAT(purchases.purchase_date, '%Y-%m') AS month, 
@@ -951,13 +951,9 @@ def sales_report():
     """
     cursor.execute(query, (start_date, end_date,airline_name))
     monthly_report = cursor.fetchall()
-
     total_sales = sum(float(row['total_amount']) for row in monthly_report)
 
-
-
-
-
+    #固态，画yearly_report那个chart bar用
     query = """
         SELECT 
             DATE_FORMAT(purchases.purchase_date, '%Y-%m') AS month, 
@@ -980,8 +976,51 @@ def sales_report():
     yearly_report_json = json.dumps(yearly_report)
     print('yearly_report_json:',yearly_report_json)
 
+
+    #查询pie chart
+    last_month_start = (now - timedelta(days=30)).strftime('%Y-%m-%d')
+    last_year_start = (now - timedelta(days=365)).strftime('%Y-%m-%d')
+    today = now.strftime('%Y-%m-%d')
+
+    query_direct = """
+        SELECT SUM(flight.price) AS total_amount
+        FROM ticket
+        JOIN purchases ON ticket.ticket_id = purchases.ticket_id
+        JOIN flight ON flight.flight_num = ticket.flight_num
+        WHERE ticket.airline_name = %s
+        AND purchases.booking_agent_id IS NULL
+        AND purchases.purchase_date BETWEEN %s AND %s;
+    """
+
+    query_indirect = """
+        SELECT SUM(flight.price) AS total_amount
+        FROM ticket
+        JOIN purchases ON ticket.ticket_id = purchases.ticket_id
+        JOIN flight ON flight.flight_num = ticket.flight_num
+        WHERE ticket.airline_name = %s
+        AND purchases.booking_agent_id IS NOT NULL
+        AND purchases.purchase_date BETWEEN %s AND %s;
+    """
+
+    # 获取过去一个月收入
+    cursor.execute(query_direct, (airline_name, last_month_start, today))
+    direct_last_month = cursor.fetchone()['total_amount'] or 0
+
+    cursor.execute(query_indirect, (airline_name, last_month_start, today))
+    indirect_last_month = cursor.fetchone()['total_amount'] or 0
+
+    # 获取过去一年的收入
+    cursor.execute(query_direct, (airline_name, last_year_start, today))
+    direct_last_year = cursor.fetchone()['total_amount'] or 0
+
+    cursor.execute(query_indirect, (airline_name, last_year_start, today))
+    indirect_last_year = cursor.fetchone()['total_amount'] or 0
+
+
     return render_template('sales_report.html', yearly_report=yearly_report_json, 
-                           start_date=start_date, end_date=end_date, total_sales = total_sales)
+                           start_date=start_date, end_date=end_date, total_sales = total_sales,
+                           direct_last_month = direct_last_month,indirect_last_month = indirect_last_month,
+                           direct_last_year = direct_last_year, indirect_last_year = indirect_last_year)
 
 
 

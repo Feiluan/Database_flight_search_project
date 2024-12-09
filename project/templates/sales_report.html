@@ -80,6 +80,22 @@
         }
 
 
+        .view_revenue_comparison_chart{
+            display: flex; /* 使用 flexbox 布局 */
+            justify-content: space-between; /* 在容器中均匀分布图表 */
+            align-items: center; /* 垂直居中对齐 */
+            gap: 20px; /* 图表之间的间距 */
+            margin-top: 20px;
+        }
+
+        .view_revenue_comparison_chart_canvas {
+            flex: 1; /* 每个图表占据等分空间 */
+            text-align: center;
+            max-width: 400px; /* 设置图表的最大宽度 */
+            height: auto;
+        }
+
+
         
         /* Media queries for responsive behavior */
         @media (max-width: 320px) {
@@ -150,7 +166,15 @@
                 <div class="view_sales_report_chart_canvas">
                     <canvas id="view_sales_report_chart_canvas"></canvas>
                 </div>
-
+            </div>
+            <div class="view_revenue_comparison_chart">
+                <h3>Revenue Comparison</h3>
+                <div class="view_revenue_comparison_chart_canvas">
+                    <canvas id="view_revenue_comparison_chart_canvas_month"></canvas>
+                </div>
+                <div class="view_revenue_comparison_chart_canvas">
+                    <canvas id="view_revenue_comparison_chart_canvas_year"></canvas>
+                </div>
             </div>
     
 
@@ -180,14 +204,13 @@
 
 
 
-        // 处理过去一个年commission Booking Agent 数据
+        // read chart for yearly earned report data
         const yearly_report = JSON.parse('{{ yearly_report | safe }}');
         console.log(yearly_report)
         const yearly_report_month = yearly_report.map(data => data.month);
         const yearly_report_total_amount = yearly_report.map(data => data.total_amount);
 
-
-        // 创建过去一个月票务销量柱状图
+        // chart for yearly earned report 
         const ctxTicketYearReport = document.getElementById('view_sales_report_chart_canvas').getContext('2d');
         new Chart(ctxTicketYearReport, {
             type: 'bar',
@@ -214,6 +237,59 @@
                     x: {
                         title: { display: true, text: 'Month' }
                     }
+                }
+            }
+        });
+
+
+
+
+        // view_revenue_comparison_chart data
+        const directLastMonth = {{ direct_last_month }};
+        const indirectLastMonth = {{ indirect_last_month }};
+        const directLastYear = {{ direct_last_year }};
+        const indirectLastYear = {{ indirect_last_year }};
+
+        // 上个月收入饼图
+        const ctxLastMonth = document.getElementById('view_revenue_comparison_chart_canvas_month').getContext('2d');
+        new Chart(ctxLastMonth, {
+            type: 'pie',
+            data: {
+                labels: ['Direct Sales', 'Indirect Sales'],
+                datasets: [{
+                    data: [directLastMonth, indirectLastMonth],
+                    backgroundColor: ['rgba(75, 192, 192, 0.2)', 'rgba(255, 159, 64, 0.2)'],
+                    borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 159, 64, 1)'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'top' },
+                    title: { display: true, text: 'Revenue Comparison (Last Month)' }
+                }
+            }
+        });
+
+        // 去年收入饼图
+        const ctxLastYear = document.getElementById('view_revenue_comparison_chart_canvas_year').getContext('2d');
+        new Chart(ctxLastYear, {
+            type: 'pie',
+            data: {
+                labels: ['Direct Sales', 'Indirect Sales'],
+                datasets: [{
+                    data: [directLastYear, indirectLastYear],
+                    backgroundColor: ['rgba(75, 192, 192, 0.2)', 'rgba(255, 159, 64, 0.2)'],
+                    borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 159, 64, 1)'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'top' },
+                    title: { display: true, text: 'Revenue Comparison (Last Year)' }
                 }
             }
         });
