@@ -132,7 +132,7 @@
 
 
 
-        
+        .view_sales_reports,
         .view_most_frequent_customer_container,
         .view_specific_customer_history_container {
             display: flex; /* 使用 flexbox 将标题和内容排列在一行 */
@@ -337,7 +337,7 @@
 
                 <div class="view_frequent_customers">
                     <div class="view_frequent_customers_header">
-                        <h3>View frequent customers of {{ session['user']['airline_name'] }}</h3>
+                        <h3>View frequent customers of {{ session['user']['airline_name'] }}:</h3>
                     </div>
 
                     <div class="view_most_frequent_customer_container">
@@ -367,6 +367,15 @@
                         </div>
                     </div>
                     
+                </div>
+
+                <div class="view_sales_reports">
+                    <div class="view_frequent_customers_header">
+                        <h3>View sales report of {{ session['user']['airline_name'] }}:</h3>
+                    </div>
+                    <form method="POST" action="/sales_report">
+                        <button type="submit">Sales report</button>
+                    </form>
                 </div>
 
                 

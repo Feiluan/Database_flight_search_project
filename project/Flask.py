@@ -926,7 +926,6 @@ def logout():
 
 
 @app.route('/search', methods=['GET', 'POST'])
-# @app.route('/search', methods=['POST'])
 def search_flights():
     # 获取表单中的用户输入
     departure_city = request.form.get('departure_city')  # 出发城市
