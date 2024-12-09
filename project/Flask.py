@@ -916,6 +916,80 @@ def frequent_customers():
     return render_template('customer_history.html', flight_history=flight_history, customer_email=customer_email)
 
 
+
+
+
+@app.route('/sales_report', methods=['GET','POST'])
+def sales_report():
+    if 'user' not in session:
+        return redirect(url_for('login')) 
+ 
+    cursor = db.cursor(dictionary=True)
+    airline_name = session['user']['airline_name']
+    
+    now = datetime.now()
+    if request.form.get('clear_filter'):
+        start_date = (now - timedelta(days=365)).strftime('%Y-%m-%d')  # 默认过去一年
+        end_date = now.strftime('%Y-%m-%d')
+    else:
+        start_date = request.form.get('start_date') or (now - timedelta(days=365)).strftime('%Y-%m-%d')
+        end_date = request.form.get('end_date') or now.strftime('%Y-%m-%d')
+
+
+    query = """
+        SELECT 
+            DATE_FORMAT(purchases.purchase_date, '%Y-%m') AS month, 
+            COUNT(ticket.ticket_id) AS total_tickets, 
+            SUM(flight.price) AS total_amount
+        FROM ticket
+        JOIN purchases ON ticket.ticket_id = purchases.ticket_id
+        JOIN flight ON flight.flight_num = ticket.flight_num
+        WHERE (purchases.purchase_date BETWEEN %s AND %s)
+            AND ticket.airline_name = %s
+        GROUP BY month
+        ORDER BY month ASC;
+    """
+    cursor.execute(query, (start_date, end_date,airline_name))
+    monthly_report = cursor.fetchall()
+
+    total_sales = sum(float(row['total_amount']) for row in monthly_report)
+
+
+
+
+
+    query = """
+        SELECT 
+            DATE_FORMAT(purchases.purchase_date, '%Y-%m') AS month, 
+            COUNT(ticket.ticket_id) AS total_tickets, 
+            SUM(flight.price) AS total_amount
+        FROM ticket
+        JOIN purchases ON ticket.ticket_id = purchases.ticket_id
+        JOIN flight ON flight.flight_num = ticket.flight_num
+        WHERE (purchases.purchase_date BETWEEN %s AND %s)
+            AND ticket.airline_name = %s
+        GROUP BY month
+        ORDER BY month ASC;
+    """
+    cursor.execute(query, ((now - timedelta(days=365)).strftime('%Y-%m-%d'), now.strftime('%Y-%m-%d'),airline_name))
+    yearly_report = cursor.fetchall()
+
+    for item in yearly_report:
+        item['total_amount'] = float(item['total_amount'])
+    
+    yearly_report_json = json.dumps(yearly_report)
+    print('yearly_report_json:',yearly_report_json)
+
+    return render_template('sales_report.html', yearly_report=yearly_report_json, 
+                           start_date=start_date, end_date=end_date, total_sales = total_sales)
+
+
+
+
+
+
+
+
 @app.route('/logout')
 def logout():
     # print('test')

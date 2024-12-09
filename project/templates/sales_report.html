@@ -123,14 +123,51 @@
     </div>
 
     <div class="container">
-
-        <div class="specific_customer_history">
-            <div class="specific_customer_history title">
-                <h3>Customer history of {{ customer_email }} in {{ session['user']['airline_name'] }}:</h3>    
+        <div class="view_sales_report">
+            <div class="view_sales_report_header">
+                <h3> Total amounts of ticket sold </h3>
             </div>
-            
         </div>
 
+        <div class="view_sales_report_container">
+            <div class="view_sales_report_filter">
+                <form method="POST" action="/sales_report" class="filter-form">
+                    <label for="start_date">Start Date:</label>
+                    <input type="date" id="start_date" name="start_date" value="{{ start_date }}" required>
+            
+                    <label for="end_date">End Date:</label>
+                    <input type="date" id="end_date" name="end_date" value="{{ end_date }}" required>
+            
+                    <button type="submit">Filter</button>
+                    <button type="submit" name="clear_filter" value="true">Clear Filters</button>
+                </form>
+            </div>
+            <div class="sales_report_summary">
+                <h3>Total Sales from {{ start_date }} to {{ end_date }}: ${{ "%.2f"|format(total_sales) }}</h3>
+            </div>
+
+            <div class="view_sales_report_chart">
+                <div class="view_sales_report_chart_canvas">
+                    <canvas id="view_sales_report_chart_canvas"></canvas>
+                </div>
+
+            </div>
+    
+
+        </div>
+
+
+
+
+
+
+
+
+
+
+
+
+        
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -140,6 +177,46 @@
         setTimeout(() => {
             if (message) message.style.display = 'none';
         }, displayTime);
+
+
+
+        // 处理过去一个年commission Booking Agent 数据
+        const yearly_report = JSON.parse('{{ yearly_report | safe }}');
+        console.log(yearly_report)
+        const yearly_report_month = yearly_report.map(data => data.month);
+        const yearly_report_total_amount = yearly_report.map(data => data.total_amount);
+
+
+        // 创建过去一个月票务销量柱状图
+        const ctxTicketYearReport = document.getElementById('view_sales_report_chart_canvas').getContext('2d');
+        new Chart(ctxTicketYearReport, {
+            type: 'bar',
+            data: {
+                labels: yearly_report_month, // X轴：Booking Agent 邮箱
+                datasets: [{
+                    label: 'Total sales (Last Year)',
+                    data: yearly_report_total_amount, // Y轴：票务数量
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: true, position: 'top' }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Sales amount' }
+                    },
+                    x: {
+                        title: { display: true, text: 'Month' }
+                    }
+                }
+            }
+        });
 
     </script>
 
