@@ -809,6 +809,7 @@ def passengers():
     cursor = db.cursor(dictionary=True)
     flight_num = request.args.get('flight_num')
     airline_name = request.args.get('airline_name')
+    print(flight_num,airline_name)
 
     if not flight_num or not airline_name:
         flash("Invalid flight details provided.", "danger")
