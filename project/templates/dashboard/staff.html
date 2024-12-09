@@ -36,7 +36,7 @@
         .flash.success { background-color: #d4edda; color: #155724; }
         .flash.error { background-color: #f8d7da; color: #721c24; }
         .flash.danger { background-color: #f8d7da; color: #721c24; }
-        
+
         button {
             background-color: #007BFF;
             color: #fff;
@@ -67,14 +67,28 @@
             align-items: center; 
         }
         .permission-header {
-            flex: 0 0 30%; /* 固定宽度占 30% */
-            text-align: center; /* 左对齐文本 */
+            /* 固定宽度占 30%,左对齐文本 */
+            flex: 0 0 30%; 
+            text-align: center; 
         }
         .permission-container{
-            flex: 0 0 70%; /* 固定宽度占 70% */
+            /*固定宽度占 70% */
+            flex: 0 0 70%; 
             display: flex; 
             justify-content: left; 
             gap: 15px; 
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
         }
 
 
@@ -109,6 +123,9 @@
 
     <div class="headline">
         <h1>Staff Center</h1>
+        <span style="font-size: 14px; color: gray;">
+            Welcome, {{ session['user']['email'] }} <!-- 或者是 session['user']['username'] 如果你存的是用户名 -->
+        </span>
         <div class="button-container">
             <button onclick="window.location.href='/'">Home Page</button>
             <a href="{{ url_for('logout') }}">
@@ -123,10 +140,10 @@
                 <h3>My Permission:</h3>
             </div>
             <div class="permission-container">
-                {% if staff_permission %}
-                    {% for permission in staff_permission %}
+                {% if session['user']['permissions']  %}
+                    {% for permission in session['user']['permissions'] %}
                         <div class="permission-card">
-                            <p>{{ permission['permission_type'] }}</p>
+                            <p>{{ permission }}</p>
                         </div>
                     {% endfor %}
                 {% else %}
@@ -136,6 +153,150 @@
                 {% endif %}
             </div>
         </div>
+
+        <div class="form_group">
+            <div class="selector">
+                <button id ="default">Default</button>
+                <button id ="admin">Admin</button>
+                <button id ="operator">Operator</button>
+            </div>
+
+
+
+            <div id="default_form" class="form_section active">
+                <div class="view_airline_flight">
+                    <div class="view_airline_flight_header">
+                        <h3>View all the flights of {{ session['user']['airline_name'] }}</h3>
+                    </div>
+
+                    <div class="view_airline_flight_filter">
+
+                        <form method="GET" action="/dashboard/staff">
+                            <label for="flight_start_date">Start Date:</label>
+                            <input type="date" id="flight_start_date" name="flight_start_date" 
+                                value="{{ flight_start_date if flight_start_date else '' }}"
+                                onchange="updateEndDateMin()">
+
+                            <label for="flight_end_date">End Date:</label>
+                            <input type="date" id="flight_end_date" name="flight_end_date" 
+                                value="{{ flight_end_date if flight_end_date else '' }}"  
+                                onchange="updateStartDateMax()">
+
+                            <label for="departure_airport">Departure Airport:</label>
+                            <input type="text" id="flight_departure_airport" name="flight_departure_airport" 
+                                value="{{ flight_departure_airport if flight_departure_airport else '' }}" 
+                                placeholder="Enter departure airport">
+                            
+                            <label for="arrival_airport">Arrival Airport:</label>
+                            <input type="text" id="flight_arrival_airport" name="flight_arrival_airport" 
+                                value="{{ flight_arrival_airport if flight_arrival_airport else '' }}" 
+                                placeholder="Enter arrival airport">
+                    
+
+                            <label for="flights_status">Status:</label>
+                            <select name="flight_status_selector">
+                                <option value="*" {% if flight_status_selector == "*" %}selected{% endif %}>All</option>
+                                <option value="upcoming" {% if flight_status_selector == "upcoming" %}selected{% endif %}>Upcoming</option>
+                                <option value="delayed" {% if flight_status_selector == "delayed" %}selected{% endif %}>Delayed</option>
+                                <option value="in_progress" {% if flight_status_selector == "in_progress" %}selected{% endif %}>In Progress</option>
+                                <!-- <option value="completed" {% if flight_status_selector == "completed" %}selected{% endif %}>Completed</option> -->
+                            </select>
+                            <button type="submit">Filter</button>
+                            <button type="submit" name="clear_filter" value="true">Clear Filters</button>
+        
+                        </form>
+        
+                    </div>
+
+                    <div class="view_airline_flights_container">
+                        {% if airline_flight %}
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Airline</th>
+                                        <th>Flight Number</th>
+                                        <th>Departure Airport</th>
+                                        <th>Departure Time</th>
+                                        <th>Arrival Airport</th>
+                                        <th>Arrival Time</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for flight in airline_flight %}
+                                    <tr>
+                                        <td>{{ flight.airline_name }}</td>
+                                        <td>{{ flight.flight_num }}</td>
+                                        <td>{{ flight.departure_airport }}</td>
+                                        <td>{{ flight.departure_time }}</td>
+                                        <td>{{ flight.arrival_airport }}</td>
+                                        <td>{{ flight.arrival_time }}</td>
+                                        <td>{{ flight.status }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <p>There aren't any flights scheduled in this airline yet or there isn't any flights scheduled in this filter status yet.</p>
+                        {% endif %}
+                    </div>
+
+                </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                <div class="view_booking_agents">
+                    <div class="view_booking_agents_header">
+                        <h3>View all the booking agents of {{ session['user']['airline_name'] }}</h3>
+                    </div>
+                    <div class="view_booking_agents_container">
+                        {% if airline_booking_agent %}
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Email</th>
+                                        <th>Booking agent id</th>
+                                        <th>Airline name</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for booking_agent in airline_booking_agent %}
+                                    <tr>
+                                        <td>{{ booking_agent.email }}</td>
+                                        <td>{{ booking_agent.booking_agent_id }}</td>
+                                        <td>{{ booking_agent.airline_name }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <p>There isn't any booking agent works for your airline yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+            </div>
+
+        </div>
+
     </div>
 
 
@@ -145,6 +306,39 @@
         setTimeout(() => {
             if (message) message.style.display = 'none';
         }, displayTime);
+
+        
+        function updateEndDateMin() {
+            // 获取 Start Date 和 End Date 的元素
+            const startDate = document.getElementById('flight_start_date').value;
+            const endDateInput = document.getElementById('flight_end_date');
+
+            if (startDate) { 
+                endDateInput.min = startDate; 
+            }
+        }
+
+        function updateStartDateMax() {
+            const endDate = document.getElementById('flight_end_date').value;
+            const startDateInput = document.getElementById('flight_start_date');
+
+            if (endDate) { 
+                startDateInput.max = endDate; 
+            }
+        }
+
+        function validateDates() {
+            const startDate = document.getElementById('flight_start_date').value;
+            const endDate = document.getElementById('flight_end_date').value;
+
+            // 如果 Start Date 大于 End Date，阻止表单提交
+            if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+                alert("Start Date cannot be later than End Date.");
+                return false; // 阻止提交
+            }
+            return true; 
+        }
+
     </script>
 
 

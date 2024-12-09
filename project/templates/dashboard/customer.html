@@ -152,7 +152,7 @@
             </div>
 
             <div class="view_my_flights_container">
-                {% if booked_flights %}
+                {% if airline_flight %}
                     <table>
                         <thead>
                             <tr>
@@ -167,7 +167,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for flight in booked_flights %}
+                            {% for flight in airline_flight %}
                             <tr>
                                 <td>{{ flight.airline_name }}</td>
                                 <td>{{ flight.flight_num }}</td>

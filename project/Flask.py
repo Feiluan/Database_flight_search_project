@@ -13,8 +13,7 @@ app.secret_key = 'key' #不配置这条会报错
 db = mysql.connector.connect(host='localhost',
                             user='root',
                             password='',
-                            database='finalproject',
-                            port=3307)
+                            database='finalproject',)
 
 @app.route('/')
 def home():
@@ -28,8 +27,20 @@ def home():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    def check_email_exists(email, cursor):
+        query = """
+        SELECT 1 FROM customer WHERE email = %s
+        UNION
+        SELECT 1 FROM booking_agent WHERE email = %s
+        UNION
+        SELECT 1 FROM airline_staff WHERE email = %s
+        """
+        cursor.execute(query, (email, email, email))
+        return cursor.fetchone()
 
-    try:
+    # try:
+    a = 1
+    if a==1 :
         cursor = db.cursor(dictionary=True)
 
         cursor.execute("SELECT airline_name FROM airline")
@@ -73,9 +84,7 @@ def register():
                     return redirect(url_for('register'))
 
                 # 检查是否已存在用户
-                cursor.execute(existing_email_query, (customer_email, customer_email, customer_email,))
-                existing_user = cursor.fetchone()
-                if existing_user:
+                if check_email_exists(customer_email, cursor):
                     flash('Email already exists!', 'danger')
                     return redirect(url_for('register'))
 
@@ -107,9 +116,7 @@ def register():
                     flash('All fields are required!', 'danger')
                     return redirect(url_for('register'))
                 
-                cursor.execute(existing_email_query, (agent_email, agent_email, agent_email,))
-                existing_agent = cursor.fetchone()
-                if existing_agent:
+                if check_email_exists(agent_email, cursor):
                     flash('Email already exists!', 'danger')
                     return redirect(url_for('register'))
                 
@@ -149,9 +156,7 @@ def register():
                     flash('All fields are required!', 'danger')
                     return redirect(url_for('register'))
                 
-                cursor.execute(existing_email_query, (staff_email,staff_email, staff_email,))
-                existing_staff = cursor.fetchone()
-                if existing_staff:
+                if check_email_exists(staff_email, cursor):
                     flash('Email already exists!', 'danger')
                     return redirect(url_for('register'))
             
@@ -169,14 +174,14 @@ def register():
                 flash('Airline Staff registration successful!', 'success')
                 return redirect(url_for('register'))
             
-    except mysql.connector.Error as err:
-            print(f"Database error: {err}")
-            flash("Database error. Please try again later.", "error")
-            return redirect(url_for('register'))
-    finally:
-        if db.is_connected():
-            print('register-finally')
-            cursor.close()
+    # except mysql.connector.Error as err:
+    #         print(f"Database error: {err}")
+    #         flash("Database error. Please try again later.", "error")
+    #         return redirect(url_for('register'))
+    # finally:
+    #     if db.is_connected():
+    #         print('register-finally')
+    #         cursor.close()
 
     return render_template('register.html',airlines=airlines)
 
@@ -229,9 +234,15 @@ def login():
                 session['user']['airline_name'] = user['airline_name']
                 cursor.execute("SELECT permission_type FROM permission WHERE email = %s", (email,))
                 permissions = cursor.fetchall()
-                print("permissions",permissions)
-                session['user']['permissions'] = [permission['permission_type'] for permission in permissions]
-                
+                # print("permission get from database",permissions)
+
+                if permissions:
+                    # 提取权限类型的值
+                    session['user']['permissions'] = [permission['permission_type'] for permission in permissions]
+                else:
+                    session['user']['permissions'] = []  # 没有权限时为空列表
+                # print("permissions after processing:", session['user']['permissions'])   
+                             
                 # 权限为空 设置一个默认值
                 if not session['user']['permissions']:
                     session['user']['permissions'] = ['None']
@@ -254,22 +265,6 @@ def login():
         #     cursor.close()
 
     return render_template('login.html')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -583,6 +578,7 @@ def agent_dashboard():
             
         query = """
             SELECT 
+                p.customer_email,
                 f.airline_name,
                 f.flight_num,
                 f.departure_airport,
@@ -691,30 +687,153 @@ def agent_dashboard():
 
 
 
-
-
-
-
-
-
-
-
-
-
 @app.route('/dashboard/staff')
 def staff_dashboard():
     if 'user' not in session:
         return redirect(url_for('login'))  
     
     staff_email = session['user']['email']
+    staff_airline = session['user']['airline_name']
+    staff_permission = session['user']['permissions']
     cursor = db.cursor(dictionary=True)
 
-    cursor.execute("SELECT permission_type FROM permission WHERE email = %s", (staff_email,))
-    staff_permission = cursor.fetchall() 
-    # print(staff_permission)
+
+    print("permission:",staff_permission)
+    print("staff airline name:",staff_airline)
+    print()
+
+
+    # if request.method == 'POST':
+    form_type = request.form.get('form_type')
+    print("form_type:", form_type)
+    print()
+
+   
+
+
+
+    # if form_type == 'default':
+    
+    #View all the flights of airline功能
+   
+
+    flight_start_date = request.args.get('flight_start_date')
+    flight_end_date = request.args.get('flight_end_date')
+    flight_departure_airport = request.args.get('flight_departure_airport')
+    flight_arrival_airport = request.args.get('flight_arrival_airport')
+    flight_status_selector = request.args.get('flight_status_selector')
+
+    #clear_filter用，传递上一次按filter selector的日期
+    clear_filter = request.args.get('clear_filter', False)
+    if clear_filter:
+        flight_start_date = None
+        flight_end_date = None
+        flight_departure_airport = None
+        flight_arrival_airport = None
+        flight_status_selector = None
+    
+    now = datetime.now()
+    default_flight_start_date = now
+    default_flight_end_date = now + timedelta(days=30)
+    default_status = 'Upcoming'
+
+    query = """
+        SELECT * 
+        FROM flight
+        WHERE airline_name = %s
+    """
+    search_condition = [staff_airline]
+
+
+
     
 
-    return render_template('dashboard/staff.html', staff_permission = staff_permission)
+
+    if flight_start_date or flight_end_date:
+        # 输入了时间范围，不限制 status
+        query += " AND departure_time BETWEEN %s AND %s"
+        search_condition.append(flight_start_date if flight_start_date else default_flight_start_date)
+        search_condition.append(flight_end_date if flight_end_date else default_flight_end_date)
+        print("this is query1:",query)
+        print("this is the search condition1:",staff_airline, flight_start_date, flight_end_date)
+        if flight_start_date and flight_end_date:
+            if (flight_start_date > flight_end_date):
+                flash('Start Date cannot be later than End Date!', 'danger')
+
+    else:
+        # 使用默认时间范围
+        query += " AND departure_time BETWEEN %s AND %s"
+        search_condition.append(default_flight_start_date)
+        search_condition.append(default_flight_end_date)
+        print("this is query2:",query)
+        print("this is the search condition2:",staff_airline, default_flight_start_date, default_flight_end_date)
+
+    if flight_status_selector and flight_status_selector != "*":
+        query += " AND status = %s"
+        search_condition.append(flight_status_selector)
+    elif not (flight_start_date or flight_end_date):
+        # 默认状态为 'upcoming'，仅在没有用户提供时间范围时应用
+        query += " AND status = %s"
+        search_condition.append(default_status)
+    
+    if flight_departure_airport:
+        query += " AND departure_airport = %s"
+        search_condition.append(flight_departure_airport)
+
+    # 目的地条件
+    if flight_arrival_airport:
+        query += " AND arrival_airport = %s"
+        search_condition.append(flight_arrival_airport)
+
+    print()
+    print()
+    print("this is final query:",query)
+    print("this is final condidiont:", search_condition)
+    cursor.execute(query,tuple(search_condition))
+    airline_flight = cursor.fetchall()
+    print(airline_flight)
+    #View all the flights of airline功能
+
+
+
+
+
+    #view top 5 booking agent功能
+
+    query = """
+        SELECT bf.email, booking_agent.booking_agent_id, bf.airline_name
+        FROM booking_agent_work_for AS bf
+        JOIN booking_agent ON bf.email = booking_agent.email
+        WHERE bf.airline_name = %s 
+    """
+    cursor.execute(query, (staff_airline, ) )
+    airline_booking_agent = cursor.fetchall()
+    print('airline booking agent:', airline_booking_agent)
+
+
+    
+
+    #view top 5 booking agent功能
+
+
+
+
+
+
+
+
+    print()
+    print(flight_start_date,flight_end_date)
+    print(flight_departure_airport)
+    print(flight_arrival_airport)
+
+    
+
+    return render_template('dashboard/staff.html', airline_booking_agent = airline_booking_agent,
+                           airline_flight = airline_flight, 
+                           flight_start_date = flight_start_date, flight_end_date = flight_end_date,
+                           flight_departure_airport = flight_departure_airport, flight_arrival_airport = flight_arrival_airport,
+                           flight_status_selector = flight_status_selector)
 
 
 
