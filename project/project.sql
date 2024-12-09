@@ -11,7 +11,7 @@ CREATE TABLE `airline` (
 
 CREATE TABLE `airline_staff` (
   `email` varchar(50) NOT NULL,
-  `password` varchar(50) NOT NULL,
+  `password` varchar(200) NOT NULL,
   `first_name` varchar(50) NOT NULL,
   `last_name` varchar(50) NOT NULL,
   `date_of_birth` date NOT NULL,
@@ -61,7 +61,7 @@ CREATE TABLE `airport` (
 
 CREATE TABLE `booking_agent` (
   `email` varchar(50) NOT NULL,
-  `password` varchar(50) NOT NULL,
+  `password` varchar(200) NOT NULL,
   `booking_agent_id` int(11) NOT NULL,
   PRIMARY KEY(`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -83,12 +83,12 @@ CREATE TABLE `booking_agent_work_for` (
 CREATE TABLE `customer` (
   `email` varchar(50) NOT NULL,
   `name` varchar(50) NOT NULL,
-  `password` varchar(50) NOT NULL,
+  `password` varchar(200) NOT NULL,
   `building_number` varchar(30) NOT NULL,
   `street` varchar(30) NOT NULL,
   `city` varchar(30) NOT NULL,
   `state` varchar(30) NOT NULL,
-  `phone_number` int(11) NOT NULL,
+  `phone_number` int(13) NOT NULL,
   `passport_number` varchar(30) NOT NULL,
   `passport_expiration` date NOT NULL,
   `passport_country` varchar(50) NOT NULL,
@@ -142,10 +142,15 @@ CREATE TABLE `ticket` (
 
 CREATE TABLE `purchases` (
   `ticket_id` int(11) NOT NULL,
-  `customer_email` varchar(50) NOT NULL,
-  `booking_agent_id` int(11),
+  `customer_email` varchar(50), -- For passengers using booking_agents there are no need
+  `booking_agent_id` int(10),
   `purchase_date` date NOT NULL,
-  PRIMARY KEY(`ticket_id`, `customer_email`),
-  FOREIGN KEY(`ticket_id`) REFERENCES `ticket`(`ticket_id`),
-  FOREIGN KEY(`customer_email`) REFERENCES `customer`(`email`)
+  `phone_number` varchar(13) NOT NULL,
+  `passport_number` varchar(30) NOT NULL,
+  `passport_expiration` date NOT NULL,
+  `passport_country` varchar(50) NOT NULL,
+  `date_of_birth` date NOT NULL,
+  PRIMARY KEY (`ticket_id`, `customer_email`),
+  FOREIGN KEY (`ticket_id`) REFERENCES `ticket`(`ticket_id`),
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+

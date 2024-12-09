@@ -80,7 +80,7 @@ def register():
                     return redirect(url_for('register'))
 
                 # 对密码进行加密
-                hashed_password = generate_password_hash(customer_password, method='sha256')
+                hashed_password = generate_password_hash(customer_password, method='pbkdf2:sha256')
 
                 # 将用户数据插入数据库
                 query = """
@@ -122,7 +122,7 @@ def register():
                     return redirect(url_for('register'))
 
                 
-                hashed_password = generate_password_hash(agent_password, method='sha256')
+                hashed_password = generate_password_hash(agent_password, method='pbkdf2:sha256')
                 query = """
                     INSERT INTO booking_agent (
                         email, password, booking_agent_id
@@ -155,7 +155,7 @@ def register():
                     flash('Email already exists!', 'danger')
                     return redirect(url_for('register'))
             
-                hashed_password = generate_password_hash(staff_password, method='sha256')
+                hashed_password = generate_password_hash(staff_password, method='pbkdf2:sha256')
                 query = """
                     INSERT INTO airline_staff (
                         email, password, first_name, last_name, date_of_birth, airline_name
@@ -837,7 +837,7 @@ def purchase_flight(flight_num):
     if identity == 'customer':
         # 查询顾客注册时的信息，包括护照和出生日期
         cursor.execute("""
-            SELECT name, passport_number, passport_expiration, passport_country, date_of_birth
+            SELECT name, phone_number, passport_number, passport_expiration, passport_country, date_of_birth
             FROM customer
             WHERE email = %s
         """, (user_email,))
@@ -846,6 +846,7 @@ def purchase_flight(flight_num):
         if request.method == 'POST':
             # 获取用户提交的信息
             name = request.form.get('name')
+            phone_number = request.form.get('phone_number')
             passport_number = request.form.get('passport_number')
             passport_expiration = request.form.get('passport_expiration')
             passport_country = request.form.get('passport_country')
@@ -857,29 +858,30 @@ def purchase_flight(flight_num):
             #     flash("All fields are required to complete the purchase.", "danger")
                 return render_template('customer_purchase.html', customer_info=customer_info, flight_info=flight_info)
 
-             # 检查是否已存在相同航班和乘客的票
+            
+            # 检查客户是否使用同一护照号码购买过机票
             cursor.execute("""
-                SELECT t.ticket_id
+                SELECT t.ticket_id, p.customer_email, p.passport_number
                 FROM ticket t
                 JOIN purchases p ON t.ticket_id = p.ticket_id
-                WHERE t.flight_num = %s AND p.customer_email = %s
-            """, (flight_num, user_email))
+                WHERE p.passport_number = %s AND t.flight_num = %s
+            """, (passport_number, flight_num))
             existing_ticket = cursor.fetchone()
 
             if existing_ticket:
-                # 返回前端弹窗提示信息
+                # 如果找到匹配记录，返回前端弹窗提示信息
                 return render_template(
-                    'customer_purchase.html',
-                    customer_info=customer_info,
+                    'agent_purchase.html',
                     flight_info=flight_info,
                     error={
-                        'message': f"A ticket for this flight ({flight_num}) has already been purchased by this passenger.",
-                        'ticket_id': existing_ticket['ticket_id']
+                        'message': f"A ticket for this flight ({flight_num}) has already been purchased by this customer.",
+                        'ticket_id': existing_ticket['ticket_id'],
+                        'email': existing_ticket['customer_email']
                     }
                 )
 
             
-            # 生成一个独立的11位 ticket_id
+            # 生成一个独立的9位 ticket_id
             while True:
                 ticket_id = str(random.randint(10**8, 10**9 - 1))  # 生成9位随机数
                 cursor.execute("SELECT 1 FROM ticket WHERE ticket_id = %s", (ticket_id,))
@@ -894,9 +896,10 @@ def purchase_flight(flight_num):
 
             # 插入 purchases 表
             cursor.execute("""
-                INSERT INTO purchases (ticket_id, customer_email, purchase_date)
-                VALUES (%s, %s, NOW())
-            """, (ticket_id, user_email))
+                INSERT INTO purchases (ticket_id, customer_email, purchase_date, phone_number, passport_number, passport_expiration, passport_country, date_of_birth)
+                VALUES (%s, %s, NOW(), %s, %s, %s, %s, %s)
+            """, (ticket_id, user_email, phone_number, passport_number, passport_expiration, passport_country, date_of_birth))
+
 
             # 更新顾客信息（如果需要更新）
             # cursor.execute("""
@@ -922,20 +925,58 @@ def purchase_flight(flight_num):
     elif identity == 'agent':
         if request.method == 'POST':
             # 获取用户提交的信息（如果代理商有特定的表单字段，可以扩展）
-            customer_email = request.form.get('customer_email')  # 代理商为客户购买
-            if not customer_email:
-                flash("Customer email is required for agent purchases.", "danger")
+            phone_number = request.form.get('phone_number')
+            name = request.form.get('name')
+            passport_number = request.form.get('passport_number')
+            passport_expiration = request.form.get('passport_expiration')
+            passport_country = request.form.get('passport_country')
+            date_of_birth = request.form.get('date_of_birth')
+
+            if not all([phone_number, name, passport_number, passport_expiration, passport_country, date_of_birth]):
+                # flash("Customer email is required for agent purchases.", "danger")
                 return render_template('agent_purchase.html', flight_info=flight_info)
+
+            # 检查客户是否使用同一护照号码购买过机票
+            cursor.execute("""
+                SELECT t.ticket_id, p.passport_number
+                FROM ticket t
+                JOIN purchases p ON t.ticket_id = p.ticket_id
+                WHERE p.passport_number = %s AND t.flight_num = %s
+            """, (passport_number, flight_num))
+            existing_ticket = cursor.fetchone()
+
+            if existing_ticket:
+                # 如果找到匹配记录，返回前端弹窗提示信息
+                return render_template(
+                    'agent_purchase.html',
+                    flight_info=flight_info,
+                    error={
+                        'message': f"A ticket for this flight ({flight_num}) has already been purchased by this passenger.",
+                        'ticket_id': existing_ticket['ticket_id'],
+                    }
+                )
+            while True:
+                ticket_id = str(random.randint(10**8, 10**9 - 1))  # 生成9位随机数
+                cursor.execute("SELECT 1 FROM ticket WHERE ticket_id = %s", (ticket_id,))
+                if not cursor.fetchone():
+                    break  # 如果 ticket_id 未被使用，退出循环
+
+            # 插入 ticket 表
+            cursor.execute("""
+                INSERT INTO ticket (ticket_id, airline_name, flight_num)
+                VALUES (%s, %s, %s)
+            """, (ticket_id, flight_info['airline_name'], flight_num))
 
             # 插入购买记录
             cursor.execute("""
-                INSERT INTO purchases (ticket_id, customer_email, purchase_date)
-                VALUES (%s, %s, NOW())
-            """, (flight_num, customer_email))
+                INSERT INTO purchases (ticket_id, phone_number, booking_agent_id, purchase_date, passport_number, passport_expiration, passport_country, date_of_birth)
+                VALUES (%s, %s, %s, NOW(), %s, %s, %s, %s)
+            """, (ticket_id, phone_number, session['user']['agent_id'], passport_number, passport_expiration, passport_country, date_of_birth))
+
             db.commit()
 
-            flash("Purchase completed successfully for the customer!", "success")
-            return redirect(url_for('home'))
+            flash(f"Purchase completed successfully! Ticket ID: {ticket_id}", "success")
+            return redirect(url_for('agent_dashboard'))
 
         return render_template('agent_purchase.html', flight_info=flight_info)
 
