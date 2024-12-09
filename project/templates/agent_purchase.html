@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Agent Purchase Flight</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            text-align: center;
+            padding-top: 50px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .flight-info {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+        }
+        .agent-note {
+            font-size: 0.9em;
+            color: gray;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Agent Purchase Flight</h1>
+
+        <!-- 显示航班信息 -->
+        <div class="flight-info">
+            <p><strong>Flight Number:</strong> {{ flight_info.flight_num }}</p>
+            <p><strong>From:</strong> {{ flight_info.departure_airport }}</p>
+            <p><strong>To:</strong> {{ flight_info.arrival_airport }}</p>
+            <p><strong>Departure Time:</strong> {{ flight_info.departure_time }}</p>
+            <p><strong>Arrival Time:</strong> {{ flight_info.arrival_time }}</p>
+            <p><strong>Price:</strong> ${{ flight_info.price }}</p>
+        </div>
+
+        <!-- 显示代理商输入信息 -->
+        <form action="" method="post">
+            <label for="phone_number">Phone Number</label>
+            <input type="text" id="phone_number" name="phone_number" placeholder="Enter customer phone number" required>
+        
+            <label for="name">Customer Name</label>
+            <input type="text" id="name" name="name" placeholder="Enter customer name" required>
+        
+            <label for="passport_number">Passport Number</label>
+            <input type="text" id="passport_number" name="passport_number" placeholder="Enter passport number" required>
+        
+            <label for="passport_expiration">Passport Expiration</label>
+            <input type="date" id="passport_expiration" name="passport_expiration" required>
+        
+            <label for="passport_country">Passport Country</label>
+            <input type="text" id="passport_country" name="passport_country" placeholder="Enter passport country" required>
+        
+            <label for="date_of_birth">Date of Birth</label>
+            <input type="date" id="date_of_birth" name="date_of_birth" required>
+        
+            <p class="agent-note">
+                Note: Make sure to enter valid customer details. You are responsible for completing the purchase accurately.
+            </p>
+        
+            <button type="submit">Complete Purchase</button>
+        </form>        
+    </div>
+</body>
+</html>
