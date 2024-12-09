@@ -9,6 +9,46 @@
             text-align: center;
             margin: 50px;
         }
+        .headline {
+            width: 100%;               /* 占满整个屏幕宽度 */
+            height: 8vh;               
+            background-color: #fff;                 
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* 给白色条添加阴影 */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;           /* 固定在顶部 */
+            top: 0;
+            left: 0;
+            z-index: 1000;             /* 确保在页面的最前面 */
+            box-sizing: border-box;
+            flex-shrink: 0;
+            padding: 0 40px;
+        }
+        .flash {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .flash.success { background-color: #d4edda; color: #155724; }
+        .flash.error { background-color: #f8d7da; color: #721c24; }
+        .flash.danger { background-color: #f8d7da; color: #721c24; }
+
+        button {
+            background-color: #007BFF;
+            color: #fff;
+            padding: 10px 16px;
+            margin: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+
         .container {
             max-width: 800px;
             margin: auto;
@@ -43,6 +83,26 @@
     </style>
 </head>
 <body>
+    <div id="flash_message">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <div class="headline">
+        <h1>Search</h1>
+        <div class="button-container">
+            <button onclick="window.location.href='/'">Home Page</button>
+            <a href="{{ url_for('logout') }}">
+                <button>Log out</button>
+            </a>
+        </div>
+    </div>
+
     <div class="container">
         <h1>Search Results</h1>
         {% if flights %}
@@ -85,5 +145,15 @@
         {% endif %}
         <a class="back-link" href="/">Back to Home</a>
     </div>
+
+    <script>
+        const message = document.getElementById('flash_message');
+        const displayTime = message ? message.innerText.length * 500 : 5000; // 每个字符100ms
+        setTimeout(() => {
+            if (message) message.style.display = 'none';
+        }, displayTime);
+    </script>
+
+
 </body>
 </html>

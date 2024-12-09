@@ -220,6 +220,7 @@
                                         <th>Arrival Airport</th>
                                         <th>Arrival Time</th>
                                         <th>Status</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -232,6 +233,14 @@
                                         <td>{{ flight.arrival_airport }}</td>
                                         <td>{{ flight.arrival_time }}</td>
                                         <td>{{ flight.status }}</td>
+                                        <td>
+                                            <!-- button for check passengers -->
+                                            <form method="GET" action="/passengers">
+                                                <input type="hidden" name="flight_num" value="{{ flight.flight_num }}">
+                                                <input type="hidden" name="airline_name" value="{{ flight.airline_name }}">
+                                                <button type="submit">View Customers</button>
+                                            </form>
+                                        </td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -245,28 +254,40 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 <div class="view_booking_agents">
                     <div class="view_booking_agents_header">
                         <h3>View all the booking agents of {{ session['user']['airline_name'] }}</h3>
                     </div>
+
+                    <div class="view_booking_agents_chart">
+                        
+                        <div class="view_top_ticket_booking_agents_chart_canvas">
+                            <canvas id="view_top_ticket_booking_agents_chart"></canvas>
+                        </div>
+                        <button id="view_top_ticket_booking_agents_chart_switch" onclick="toggleTable()">Switch to Past Year</button>
+                    
+
+                        <div class="view_top_commission_booking_agents_chart_canvas">
+                            <canvas id="view_top_commission_booking_agents_chart"></canvas>
+                        </div>
+
+
+
+                    </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                     <div class="view_booking_agents_container">
                         {% if airline_booking_agent %}
                             <table>

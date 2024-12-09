@@ -13,7 +13,7 @@ app.secret_key = 'key' #不配置这条会报错
 db = mysql.connector.connect(host='localhost',
                             user='root',
                             password='',
-                            database='finalproject',)
+                            database='finalproject')
 
 @app.route('/')
 def home():
@@ -267,7 +267,6 @@ def login():
     return render_template('login.html')
 
 
-
 @app.route('/dashboard/customer', methods=['GET', 'POST'])
 def customer_dashboard():
     if 'user' not in session:
@@ -462,35 +461,6 @@ def customer_dashboard():
                            booked_flights = booked_flights, start_date = start_date, end_date = end_date,
                            money_spend = money_spend, monthly_spending = monthly_spending_json, money_time_range_label = money_time_range_label)
 
-@app.route('/cancel/<ticket_id>', methods=['POST'])
-def cancel_ticket(ticket_id):
-    if 'user' not in session:
-        return redirect(url_for('login'))
-
-    customer_email = session['user']['email']
-    cursor = db.cursor()
-
-    try:
-        # 删除购买记录
-        cursor.execute("DELETE FROM purchases WHERE ticket_id = %s AND customer_email = %s", (ticket_id, customer_email))
-
-        # 删除票务记录
-        cursor.execute("DELETE FROM ticket WHERE ticket_id = %s", (ticket_id,))
-        db.commit()
-
-        flash("Flight successfully canceled.", "success")
-    except Exception as e:
-        db.rollback()
-        flash("An error occurred while canceling the flight. Please try again.", "danger")
-        # print(f"Error: {e}")
-    finally:
-        cursor.close()
-
-    return redirect(url_for('customer_dashboard'))
-
-
-
-
 
 @app.route('/dashboard/agent', methods=['GET', 'POST'])
 def agent_dashboard():
@@ -615,7 +585,7 @@ def agent_dashboard():
     ticket_end_date = datetime.now()
     ticket_start_date = ticket_end_date - timedelta(days=6*30)
     print()
-    print('this is day filter:',ticket_end_date,ticket_start_date)
+    # print('this is day filter:',ticket_end_date,ticket_start_date)
 
     query = """
         SELECT p.customer_email, COUNT(*) as ticket_count
@@ -686,7 +656,6 @@ def agent_dashboard():
                            top_customers_commission = top_customers_commission_json)
 
 
-
 @app.route('/dashboard/staff')
 def staff_dashboard():
     if 'user' not in session:
@@ -714,9 +683,10 @@ def staff_dashboard():
 
     # if form_type == 'default':
     
-    #View all the flights of airline功能
-   
 
+
+
+    #View all the flights of airline功能
     flight_start_date = request.args.get('flight_start_date')
     flight_end_date = request.args.get('flight_end_date')
     flight_departure_airport = request.args.get('flight_departure_airport')
@@ -744,18 +714,12 @@ def staff_dashboard():
     """
     search_condition = [staff_airline]
 
-
-
-    
-
-
     if flight_start_date or flight_end_date:
         # 输入了时间范围，不限制 status
         query += " AND departure_time BETWEEN %s AND %s"
         search_condition.append(flight_start_date if flight_start_date else default_flight_start_date)
         search_condition.append(flight_end_date if flight_end_date else default_flight_end_date)
-        print("this is query1:",query)
-        print("this is the search condition1:",staff_airline, flight_start_date, flight_end_date)
+        
         if flight_start_date and flight_end_date:
             if (flight_start_date > flight_end_date):
                 flash('Start Date cannot be later than End Date!', 'danger')
@@ -765,9 +729,7 @@ def staff_dashboard():
         query += " AND departure_time BETWEEN %s AND %s"
         search_condition.append(default_flight_start_date)
         search_condition.append(default_flight_end_date)
-        print("this is query2:",query)
-        print("this is the search condition2:",staff_airline, default_flight_start_date, default_flight_end_date)
-
+        
     if flight_status_selector and flight_status_selector != "*":
         query += " AND status = %s"
         search_condition.append(flight_status_selector)
@@ -785,14 +747,17 @@ def staff_dashboard():
         query += " AND arrival_airport = %s"
         search_condition.append(flight_arrival_airport)
 
-    print()
-    print()
-    print("this is final query:",query)
-    print("this is final condidiont:", search_condition)
     cursor.execute(query,tuple(search_condition))
     airline_flight = cursor.fetchall()
-    print(airline_flight)
+    # print(airline_flight)
     #View all the flights of airline功能
+
+
+
+
+
+
+
 
 
 
@@ -839,6 +804,29 @@ def staff_dashboard():
 
 
 
+@app.route('/passengers', methods = ['GET', 'POST'])
+def passengers():
+    cursor = db.cursor(dictionary=True)
+    flight_num = request.args.get('flight_num')
+    airline_name = request.args.get('airline_name')
+
+    if not flight_num or not airline_name:
+        flash("Invalid flight details provided.", "danger")
+        return redirect('/dashboard/staff.html')  
+    
+    query = """
+        SELECT *
+        FROM ticket
+        JOIN purchases ON ticket.ticket_id = purchases.ticket_id
+        WHERE ticket.flight_num = %s AND ticket.airline_name = %s
+    """
+    cursor.execute(query, (flight_num, airline_name))
+    passengers = cursor.fetchall()
+    print(passengers)
+
+
+
+    return render_template('passengers.html')
 
 
 
@@ -924,6 +912,7 @@ def search_flights():
     cursor.close()
 
     return render_template('search.html', flights=flights)
+
 
 @app.route('/purchase/<int:flight_num>', methods=['GET', 'POST'])
 def purchase_flight(flight_num):
@@ -1062,6 +1051,33 @@ def purchase_flight(flight_num):
     else:
         flash("Only customers and agents can purchase flights.", "danger")
         return redirect(url_for('home'))
+
+
+@app.route('/cancel/<ticket_id>', methods=['POST'])
+def cancel_ticket(ticket_id):
+    if 'user' not in session:
+        return redirect(url_for('login'))
+
+    customer_email = session['user']['email']
+    cursor = db.cursor()
+
+    try:
+        # 删除购买记录
+        cursor.execute("DELETE FROM purchases WHERE ticket_id = %s AND customer_email = %s", (ticket_id, customer_email))
+
+        # 删除票务记录
+        cursor.execute("DELETE FROM ticket WHERE ticket_id = %s", (ticket_id,))
+        db.commit()
+
+        flash("Flight successfully canceled.", "success")
+    except Exception as e:
+        db.rollback()
+        flash("An error occurred while canceling the flight. Please try again.", "danger")
+        # print(f"Error: {e}")
+    finally:
+        cursor.close()
+
+    return redirect(url_for('customer_dashboard'))
 
 
 if __name__ == '__main__':

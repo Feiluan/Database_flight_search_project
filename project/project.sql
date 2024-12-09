@@ -140,12 +140,17 @@ CREATE TABLE `ticket` (
 -- Table structure for table `purchases`
 --
 
+
 CREATE TABLE `purchases` (
   `ticket_id` int(11) NOT NULL,
-  `customer_email` varchar(50) NOT NULL,
-  `booking_agent_id` int(11),
+  `customer_email` varchar(50), -- For passengers using booking_agents there are no need
+  `booking_agent_id` int(10),
   `purchase_date` date NOT NULL,
-  PRIMARY KEY(`ticket_id`, `customer_email`),
-  FOREIGN KEY(`ticket_id`) REFERENCES `ticket`(`ticket_id`),
-  FOREIGN KEY(`customer_email`) REFERENCES `customer`(`email`)
+  `phone_number` varchar(13) NOT NULL,
+  `passport_number` varchar(30) NOT NULL,
+  `passport_expiration` date NOT NULL,
+  `passport_country` varchar(50) NOT NULL,
+  `date_of_birth` date NOT NULL,
+  PRIMARY KEY (`ticket_id`, `customer_email`),
+  FOREIGN KEY (`ticket_id`) REFERENCES `ticket`(`ticket_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
