@@ -43,4 +43,14 @@
         </form>
     </div>
 </body>
+
+<script>
+    //For flash display
+    const message = document.getElementById('flash_message');
+    const displayTime = message ? message.innerText.length * 500 : 5000; // 每个字符100ms
+    setTimeout(() => {
+        if (message) message.style.display = 'none';
+    }, displayTime);
+</script>
+
 </html>

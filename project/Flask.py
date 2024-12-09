@@ -13,8 +13,7 @@ app.secret_key = 'key' #不配置这条会报错
 db = mysql.connector.connect(host='localhost',
                             user='root',
                             password='',
-                            database='finalproject',
-                            port=3307)
+                            database='finalproject')
 
 @app.route('/')
 def home():
