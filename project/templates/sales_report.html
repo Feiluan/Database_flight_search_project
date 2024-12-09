@@ -176,7 +176,68 @@
                     <canvas id="view_revenue_comparison_chart_canvas_year"></canvas>
                 </div>
             </div>
-    
+
+            <div class="top_destinations_last_3_months">
+                <h3>Top 3 Destinations (Last 3 Months)</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Destination Airport</th>
+                            <th>Destination City</th>
+                            <th>Total Tickets Sold</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if top_destinations_last_3_months and top_destinations_last_3_months|length > 0 %}
+                            {% for destination in top_destinations_last_3_months %}
+                            <tr>
+                                <td>{{ destination.arrival_airport }}</td>
+                                <td>{{ destination.airport_city }}</td>
+                                <td>{{ destination.total_tickets }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="2">No records found for the last 3 months.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="top_destinations_last_year">
+                <h3>Top 3 Destinations (Last Year)</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Destination Airport</th>
+                            <th>Destination City</th>
+                            <th>Total Tickets Sold</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if top_destinations_last_year and top_destinations_last_year|length > 0 %}
+                            {% for destination in top_destinations_last_year %}
+                            <tr>
+                                <td>{{ destination.arrival_airport }}</td>
+                                <td>{{ destination.airport_city }}</td>
+                                <td>{{ destination.total_tickets }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="2">No records found for the last year.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+
+
+
+
+
 
         </div>
 

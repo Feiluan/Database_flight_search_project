@@ -977,6 +977,7 @@ def sales_report():
     print('yearly_report_json:',yearly_report_json)
 
 
+
     #查询pie chart
     last_month_start = (now - timedelta(days=30)).strftime('%Y-%m-%d')
     last_year_start = (now - timedelta(days=365)).strftime('%Y-%m-%d')
@@ -1015,12 +1016,59 @@ def sales_report():
 
     cursor.execute(query_indirect, (airline_name, last_year_start, today))
     indirect_last_year = cursor.fetchone()['total_amount'] or 0
+    #查询pie chart
+
+
+
+
+
+
+
+
+    #View Top destinations
+    last_3_months_start = (now - timedelta(days=90)).strftime('%Y-%m-%d')
+    last_year_start = (now - timedelta(days=365)).strftime('%Y-%m-%d')
+    today = now.strftime('%Y-%m-%d')
+
+    query_last_3_months = """
+        SELECT flight.arrival_airport, airport.airport_city, COUNT(ticket.ticket_id) AS total_tickets
+        FROM ticket
+        JOIN flight ON ticket.flight_num = flight.flight_num AND ticket.airline_name = flight.airline_name
+        JOIN purchases ON ticket.ticket_id = purchases.ticket_id
+        JOIN airport ON airport.airport_name = flight.arrival_airport
+        WHERE ticket.airline_name = %s AND purchases.purchase_date BETWEEN %s AND %s
+        GROUP BY flight.arrival_airport
+        ORDER BY total_tickets DESC
+        LIMIT 3;
+    """
+
+    # 查询过去 1 年的热门目的地
+    query_last_year = """
+        SELECT flight.arrival_airport, airport.airport_city, COUNT(ticket.ticket_id) AS total_tickets
+        FROM ticket
+        JOIN flight ON ticket.flight_num = flight.flight_num AND ticket.airline_name = flight.airline_name
+        JOIN purchases ON ticket.ticket_id = purchases.ticket_id
+        JOIN airport ON airport.airport_name = flight.arrival_airport
+        WHERE ticket.airline_name = %s AND purchases.purchase_date BETWEEN %s AND %s
+        GROUP BY flight.arrival_airport
+        ORDER BY total_tickets DESC
+        LIMIT 3;
+    """
+
+    # 执行查询
+    cursor.execute(query_last_3_months, (airline_name, last_3_months_start, today))
+    top_destinations_last_3_months = cursor.fetchall()
+
+    cursor.execute(query_last_year, (airline_name, last_year_start, today))
+    top_destinations_last_year = cursor.fetchall()
+
 
 
     return render_template('sales_report.html', yearly_report=yearly_report_json, 
                            start_date=start_date, end_date=end_date, total_sales = total_sales,
                            direct_last_month = direct_last_month,indirect_last_month = indirect_last_month,
-                           direct_last_year = direct_last_year, indirect_last_year = indirect_last_year)
+                           direct_last_year = direct_last_year, indirect_last_year = indirect_last_year,
+                           top_destinations_last_3_months = top_destinations_last_3_months, top_destinations_last_year = top_destinations_last_year)
 
 
 
