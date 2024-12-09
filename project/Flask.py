@@ -572,6 +572,54 @@ def agent_dashboard():
     
 
 
+    # agent_id = session['user']['agent_id']
+    now = datetime.now()
+    if request.form.get('clear_filter'):  # 用户点击清除筛选按钮
+        start_date = (now - timedelta(days=365)).strftime('%Y-%m-%d')  # 默认过去一年
+        end_date = now.strftime('%Y-%m-%d')
+    else:  # 使用用户选择的日期范围或默认值
+        start_date = request.form.get('start_date') or (now - timedelta(days=365)).strftime('%Y-%m-%d')
+        end_date = request.form.get('end_date') or now.strftime('%Y-%m-%d')
+
+
+
+
+    
+    if request.method == 'POST':
+        my_commission_start_date = request.form.get('my_commission_start_date')
+        my_commission_end_date = request.form.get('my_commission_end_date')
+    else:
+        # 默认过去 30 天
+        my_commission_start_date = (now - timedelta(days=30)).strftime('%Y-%m-%d')
+        my_commission_end_date = now.strftime('%Y-%m-%d')
+
+    query = """
+        SELECT 
+            SUM(flight.price * 0.1) AS total_commission,
+            COUNT(ticket.ticket_id) AS total_tickets
+        FROM ticket
+        JOIN purchases ON ticket.ticket_id = purchases.ticket_id
+        JOIN flight ON ticket.flight_num = flight.flight_num
+        WHERE purchases.booking_agent_id = %s 
+        AND purchases.purchase_date BETWEEN %s AND %s;
+    """
+    cursor.execute(query, (agent_id, my_commission_start_date, my_commission_end_date))
+    my_commission = cursor.fetchone()
+    print()
+    print("my_commission:",my_commission)
+    print()
+    total_commission = my_commission['total_commission'] or 0.0
+    total_tickets = my_commission['total_tickets'] or 0
+    average_commission = total_commission / total_tickets if total_tickets > 0 else 0.0
+
+
+
+
+
+
+
+
+
 
 
 
@@ -653,7 +701,8 @@ def agent_dashboard():
                            airlines_not_working_for=airlines_not_working_for, airlines_working_for=airlines_working_for, 
                            booked_flights = booked_flights, start_date = start_date, end_date = end_date,
                            top_customers_ticket = top_customers_ticket_json,
-                           top_customers_commission = top_customers_commission_json)
+                           top_customers_commission = top_customers_commission_json,
+                           total_commission = total_commission,total_tickets = total_tickets, average_commission = average_commission)
 
 
 @app.route('/dashboard/staff')
@@ -857,12 +906,6 @@ def staff_dashboard():
                            frequent_customer = most_frequent_customer)
 
 
-
-
-
-
-
-
 @app.route('/admin', methods = ['GET','POST'])
 def admin():
     return render_template('admin.html')
@@ -889,6 +932,7 @@ def passengers():
     passengers = cursor.fetchall()
     print("this is passengers for this flight:", passengers)
 
+    cursor.close()
     return render_template('passengers.html',passengers = passengers, flight_num = flight_num)
 
 
@@ -913,10 +957,8 @@ def frequent_customers():
     flight_history = cursor.fetchall()
     print("this is flight history for customer", flight_history)
 
+    cursor.close()
     return render_template('customer_history.html', flight_history=flight_history, customer_email=customer_email)
-
-
-
 
 
 @app.route('/sales_report', methods=['GET','POST'])
@@ -1063,18 +1105,12 @@ def sales_report():
     top_destinations_last_year = cursor.fetchall()
 
 
-
+    cursor.close()
     return render_template('sales_report.html', yearly_report=yearly_report_json, 
                            start_date=start_date, end_date=end_date, total_sales = total_sales,
                            direct_last_month = direct_last_month,indirect_last_month = indirect_last_month,
                            direct_last_year = direct_last_year, indirect_last_year = indirect_last_year,
                            top_destinations_last_3_months = top_destinations_last_3_months, top_destinations_last_year = top_destinations_last_year)
-
-
-
-
-
-
 
 
 @app.route('/logout')
