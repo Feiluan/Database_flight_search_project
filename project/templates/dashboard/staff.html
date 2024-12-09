@@ -79,6 +79,27 @@
             gap: 15px; 
         }
 
+        .filter_row {
+            display: flex;
+            gap: 10px; /* 每个表单控件之间的间距 */
+            align-items: center; /* 垂直居中对齐 */
+        }   
+        .filter_row input[type="date"],
+        .filter_row input[type="text"],
+        .filter_row select {
+            flex: 1; /* 平均分配宽度 */
+            padding: 5px; /* 增加内边距 */
+        }
+        .filter_row label {
+            white-space: nowrap; /* 防止换行 */
+            margin-right: 5px;
+        }
+        .button_row {
+            display: flex;
+            justify-content: center; /* 水平居中 */
+            gap: 10px; /* 按钮之间的间距 */
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -89,6 +110,25 @@
         }
         th {
             background-color: #f2f2f2;
+        }
+
+        .view_top_ticket_booking_agents_chart_canvas {
+            display: flex; /* 使用 Flexbox 布局 */
+            justify-content: space-between; /* 平均分布两个图表 */
+            gap: 20px; /* 两个图表之间的间距 */
+            margin: 20px 0; /* 上下间距 */
+        }
+
+        .view_top_ticket_booking_agents_chart_canvas {
+            flex: 1; /* 每个子元素平分可用空间 */
+            max-width: 50%; /* 确保宽度不会超过容器的 50% */
+            box-sizing: border-box; /* 包括 padding 和 border 在宽度计算内 */
+        }
+
+        .view_top_ticket_booking_agents_month_chart, 
+        .view_top_ticket_booking_agents_year_chart {
+            width: 100%; /* 子元素内容填充父容器 */
+            height: auto; /* 根据需要自动调整高度 */
         }
 
 
@@ -171,38 +211,41 @@
                     <div class="view_airline_flight_filter">
 
                         <form method="GET" action="/dashboard/staff">
-                            <label for="flight_start_date">Start Date:</label>
-                            <input type="date" id="flight_start_date" name="flight_start_date" 
-                                value="{{ flight_start_date if flight_start_date else '' }}"
-                                onchange="updateEndDateMin()">
 
-                            <label for="flight_end_date">End Date:</label>
-                            <input type="date" id="flight_end_date" name="flight_end_date" 
-                                value="{{ flight_end_date if flight_end_date else '' }}"  
-                                onchange="updateStartDateMax()">
+                            <div class="filter_row">
+                                <label for="flight_start_date">Start Date:</label>
+                                <input type="date" id="flight_start_date" name="flight_start_date" 
+                                    value="{{ flight_start_date if flight_start_date else '' }}"
+                                    onchange="updateEndDateMin()">
+                                <label for="flight_end_date">End Date:</label>
+                                <input type="date" id="flight_end_date" name="flight_end_date" 
+                                    value="{{ flight_end_date if flight_end_date else '' }}"  
+                                    onchange="updateStartDateMax()">
+                            </div>
 
-                            <label for="departure_airport">Departure Airport:</label>
-                            <input type="text" id="flight_departure_airport" name="flight_departure_airport" 
-                                value="{{ flight_departure_airport if flight_departure_airport else '' }}" 
-                                placeholder="Enter departure airport">
-                            
-                            <label for="arrival_airport">Arrival Airport:</label>
-                            <input type="text" id="flight_arrival_airport" name="flight_arrival_airport" 
-                                value="{{ flight_arrival_airport if flight_arrival_airport else '' }}" 
-                                placeholder="Enter arrival airport">
-                    
+                            <div class="filter_row">
+                                <label for="departure_airport">Departure Airport:</label>
+                                <input type="text" id="flight_departure_airport" name="flight_departure_airport" 
+                                    value="{{ flight_departure_airport if flight_departure_airport else '' }}" 
+                                    placeholder="Enter departure airport">
+                                <label for="arrival_airport">Arrival Airport:</label>
+                                <input type="text" id="flight_arrival_airport" name="flight_arrival_airport" 
+                                    value="{{ flight_arrival_airport if flight_arrival_airport else '' }}" 
+                                    placeholder="Enter arrival airport">
+                                <label for="flights_status">Status:</label>
+                                <select name="flight_status_selector">
+                                    <option value="*" {% if flight_status_selector == "*" %}selected{% endif %}>All</option>
+                                    <option value="upcoming" {% if flight_status_selector == "upcoming" %}selected{% endif %}>Upcoming</option>
+                                    <option value="delayed" {% if flight_status_selector == "delayed" %}selected{% endif %}>Delayed</option>
+                                    <option value="in_progress" {% if flight_status_selector == "in_progress" %}selected{% endif %}>In Progress</option>
+                                </select>
+                            </div>
 
-                            <label for="flights_status">Status:</label>
-                            <select name="flight_status_selector">
-                                <option value="*" {% if flight_status_selector == "*" %}selected{% endif %}>All</option>
-                                <option value="upcoming" {% if flight_status_selector == "upcoming" %}selected{% endif %}>Upcoming</option>
-                                <option value="delayed" {% if flight_status_selector == "delayed" %}selected{% endif %}>Delayed</option>
-                                <option value="in_progress" {% if flight_status_selector == "in_progress" %}selected{% endif %}>In Progress</option>
-                                <!-- <option value="completed" {% if flight_status_selector == "completed" %}selected{% endif %}>Completed</option> -->
-                            </select>
-                            <button type="submit">Filter</button>
-                            <button type="submit" name="clear_filter" value="true">Clear Filters</button>
-        
+                            <div class="filter_row button_row">
+                                <button type="submit">Filter</button>
+                                <button type="submit" name="clear_filter" value="true">Clear Filters</button>
+                            </div>
+                                    
                         </form>
         
                     </div>
@@ -255,22 +298,21 @@
 
                 <div class="view_booking_agents">
                     <div class="view_booking_agents_header">
-                        <h3>View all the booking agents of {{ session['user']['airline_name'] }}</h3>
+                        <h3>View the booking agent ranking of {{ session['user']['airline_name'] }}</h3>
                     </div>
 
                     <div class="view_booking_agents_chart">
+
                         
                         <div class="view_top_ticket_booking_agents_chart_canvas">
-                            <canvas id="view_top_ticket_booking_agents_chart"></canvas>
+                            <canvas id="view_top_ticket_booking_agents_month_chart"></canvas>
+                            <canvas id="view_top_ticket_booking_agents_year_chart"></canvas>
                         </div>
-                        <button id="view_top_ticket_booking_agents_chart_switch" onclick="toggleTable()">Switch to Past Year</button>
+                        <!-- <button id="view_top_ticket_booking_agents_chart_switch" onclick="toggleTable()">Switch to Past Year</button> -->
                     
-
                         <div class="view_top_commission_booking_agents_chart_canvas">
                             <canvas id="view_top_commission_booking_agents_chart"></canvas>
                         </div>
-
-
 
                     </div>
 
@@ -319,7 +361,7 @@
 
     </div>
 
-
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         const message = document.getElementById('flash_message');
         const displayTime = message ? message.innerText.length * 500 : 5000; // 每个字符100ms
@@ -358,6 +400,124 @@
             }
             return true; 
         }
+
+
+
+        // 处理过去一个月票务销量的 Booking Agent 数据
+        const top_ticket_booking_agents_month = JSON.parse('{{ top_ticket_booking_agents_month | safe }}');
+        // console.log(top_ticket_booking_agents_month)
+        const top_ticket_booking_agents_month_email = top_ticket_booking_agents_month.map(data => data.agent_email);
+        const ticket_sales_month = top_ticket_booking_agents_month.map(data => data.ticket_sales);
+
+
+        // 创建过去一个月票务销量柱状图
+        const ctxTicketMonth = document.getElementById('view_top_ticket_booking_agents_month_chart').getContext('2d');
+        new Chart(ctxTicketMonth, {
+            type: 'bar',
+            data: {
+                labels: top_ticket_booking_agents_month_email, // X轴：Booking Agent 邮箱
+                datasets: [{
+                    label: 'Tickets Sold (Past Month)',
+                    data: ticket_sales_month, // Y轴：票务数量
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: true, position: 'top' }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Tickets Sold' }
+                    },
+                    x: {
+                        title: { display: true, text: 'Booking Agent Email' }
+                    }
+                }
+            }
+        });
+
+
+
+        // 处理过去一年票务销量的 Booking Agent 数据
+        const top_ticket_booking_agents_year = JSON.parse('{{ top_ticket_booking_agents_year | safe }}');
+        console.log(top_ticket_booking_agents_year)
+        const top_ticket_booking_agents_year_email = top_ticket_booking_agents_year.map(data => data.agent_email);
+        const ticket_sales_year = top_ticket_booking_agents_year.map(data => data.ticket_sales);
+
+        // 创建过去一年票务销量柱状图
+        const ctxTicketYear = document.getElementById('view_top_ticket_booking_agents_year_chart').getContext('2d');
+        new Chart(ctxTicketYear, {
+            type: 'bar',
+            data: {
+                labels: top_ticket_booking_agents_year_email, // X轴：Booking Agent 邮箱
+                datasets: [{
+                    label: 'Tickets Sold (Past Year)',
+                    data: ticket_sales_year, // Y轴：票务数量
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: true, position: 'top' }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Tickets Sold' }
+                    },
+                    x: {
+                        title: { display: true, text: 'Booking Agent Email' }
+                    }
+                }
+            }
+        });
+
+
+        // 处理过去一个年commission Booking Agent 数据
+        const top_commission_booking_agents = JSON.parse('{{ top_commission_booking_agents | safe }}');
+        console.log(top_commission_booking_agents)
+        const top_commission_booking_agents_email = top_commission_booking_agents.map(data => data.agent_email);
+        const top_commission_booking_agents_commission = top_commission_booking_agents.map(data => data.total_commission);
+
+
+        // 创建过去一个月票务销量柱状图
+        const ctxTicketCommission = document.getElementById('view_top_commission_booking_agents_chart').getContext('2d');
+        new Chart(ctxTicketCommission, {
+            type: 'bar',
+            data: {
+                labels: top_commission_booking_agents_email, // X轴：Booking Agent 邮箱
+                datasets: [{
+                    label: 'Total commission amount (Past Year)',
+                    data: top_commission_booking_agents_commission, // Y轴：票务数量
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: true, position: 'top' }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Commission amount' }
+                    },
+                    x: {
+                        title: { display: true, text: 'Booking Agent Email' }
+                    }
+                }
+            }
+        });
 
     </script>
 

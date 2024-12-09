@@ -763,42 +763,121 @@ def staff_dashboard():
 
 
 
-    #view top 5 booking agent功能
 
-    query = """
-        SELECT bf.email, booking_agent.booking_agent_id, bf.airline_name
-        FROM booking_agent_work_for AS bf
-        JOIN booking_agent ON bf.email = booking_agent.email
-        WHERE bf.airline_name = %s 
+
+
+   
+
+    # query = """
+    #     SELECT p.customer_email, COUNT(*) as ticket_count
+    #     FROM purchases p
+    #     JOIN ticket t ON p.ticket_id = t.ticket_id
+    #     WHERE p.booking_agent_id = %s
+    #     GROUP BY p.customer_email
+    #     ORDER BY ticket_count DESC
+    #     LIMIT 5;
+    # """
+    # cursor.execute(query, (staff_id))
+    # top_customers_ticket = cursor.fetchall()
+    # print('top customer ticket:', top_customers_ticket)
+    
+    # top_customers_ticket_json = json.dumps(top_customers_ticket)
+    # print('top customer ticket json:',top_customers_ticket_json)
+
+
+    #view top 5 booking agent 买票最多功能,分last month和year
+    query_tickets_month = """
+        SELECT ba.email AS agent_email, COUNT(p.ticket_id) AS ticket_sales
+        FROM booking_agent ba
+        JOIN purchases p ON ba.booking_agent_id = p.booking_agent_id
+        JOIN ticket t ON p.ticket_id = t.ticket_id
+        WHERE t.airline_name = %s AND p.purchase_date BETWEEN DATE_SUB(NOW(), INTERVAL 1 MONTH) AND NOW()
+        GROUP BY ba.email
+        ORDER BY ticket_sales DESC
+        LIMIT 5;
     """
-    cursor.execute(query, (staff_airline, ) )
-    airline_booking_agent = cursor.fetchall()
-    print('airline booking agent:', airline_booking_agent)
+    cursor.execute(query_tickets_month, (staff_airline,))
+    top_ticket_booking_agents_month = cursor.fetchall()
+
+    top_ticket_booking_agents_month_json = json.dumps(top_ticket_booking_agents_month)
+    print('top customer ticket month json:',top_ticket_booking_agents_month_json)
+
+
+
+
+    query_tickets_year = """
+        SELECT ba.email AS agent_email, COUNT(p.ticket_id) AS ticket_sales
+        FROM booking_agent ba
+        JOIN purchases p ON ba.booking_agent_id = p.booking_agent_id
+        JOIN ticket t ON p.ticket_id = t.ticket_id
+        WHERE t.airline_name = %s AND p.purchase_date BETWEEN DATE_SUB(NOW(), INTERVAL 12 MONTH) AND NOW()
+        GROUP BY ba.email
+        ORDER BY ticket_sales DESC
+        LIMIT 5;
+    """
+    cursor.execute(query_tickets_year, (staff_airline,))
+    top_ticket_booking_agents_year = cursor.fetchall()
+
+    top_ticket_booking_agents_year_json = json.dumps(top_ticket_booking_agents_year)
+    print('top customer ticket year json:',top_ticket_booking_agents_year_json)
+
+
+
+    #view top 5 booking agent commission最多功能
+    query_commissions = """
+        SELECT ba.email AS agent_email, SUM(f.price * 0.1) AS total_commission
+        FROM booking_agent ba
+        JOIN purchases p ON ba.booking_agent_id = p.booking_agent_id
+        JOIN ticket t ON p.ticket_id = t.ticket_id
+        JOIN flight f ON t.flight_num = f.flight_num AND t.airline_name = f.airline_name
+        WHERE t.airline_name = %s AND p.purchase_date BETWEEN DATE_SUB(NOW(), INTERVAL 1 YEAR) AND NOW()
+        GROUP BY ba.email
+        ORDER BY total_commission DESC
+        LIMIT 5;
+    """
+    cursor.execute(query_commissions, (staff_airline,))
+    top_commission_booking_agents = cursor.fetchall()
+    # print("top_commission_booking_agents:", top_commission_booking_agents)
+
+    for item in top_commission_booking_agents:
+        item['total_commission'] = float(item['total_commission'])
+    
+    top_commission_booking_agents_json = json.dumps(top_commission_booking_agents)
+    print('top customer ticket json:',top_commission_booking_agents_json)
+
+    
+    
+    # query = """
+    #     SELECT bf.email, booking_agent.booking_agent_id, bf.airline_name
+    #     FROM booking_agent_work_for AS bf
+    #     JOIN booking_agent ON bf.email = booking_agent.email
+    #     WHERE bf.airline_name = %s 
+    # """
+    # cursor.execute(query, (staff_airline, ) )
+    # airline_booking_agent = cursor.fetchall()
+    # print('airline booking agent:', airline_booking_agent)
 
 
     
 
     #view top 5 booking agent功能
-
-
-
-
-
-
-
-
+    airline_booking_agent = []
     print()
-    print(flight_start_date,flight_end_date)
-    print(flight_departure_airport)
-    print(flight_arrival_airport)
-
     
 
-    return render_template('dashboard/staff.html', airline_booking_agent = airline_booking_agent,
-                           airline_flight = airline_flight, 
+    return render_template('dashboard/staff.html', airline_booking_agent = airline_booking_agent, airline_flight = airline_flight, 
                            flight_start_date = flight_start_date, flight_end_date = flight_end_date,
                            flight_departure_airport = flight_departure_airport, flight_arrival_airport = flight_arrival_airport,
-                           flight_status_selector = flight_status_selector)
+                           flight_status_selector = flight_status_selector,
+                           top_ticket_booking_agents_month = top_ticket_booking_agents_month_json, 
+                           top_ticket_booking_agents_year = top_ticket_booking_agents_year_json, 
+                           top_commission_booking_agents =  top_commission_booking_agents_json)
+
+
+
+
+
+
 
 
 @app.route('/admin', methods = ['GET','POST'])
