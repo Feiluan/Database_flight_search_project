@@ -801,7 +801,9 @@ def staff_dashboard():
                            flight_status_selector = flight_status_selector)
 
 
-
+@app.route('/admin', methods = ['GET','POST'])
+def admin():
+    return render_template('admin.html')
 
 
 @app.route('/passengers', methods = ['GET', 'POST'])
@@ -809,7 +811,7 @@ def passengers():
     cursor = db.cursor(dictionary=True)
     flight_num = request.args.get('flight_num')
     airline_name = request.args.get('airline_name')
-    print(flight_num,airline_name)
+    print("flight num and airline name:", flight_num, airline_name)
 
     if not flight_num or not airline_name:
         flash("Invalid flight details provided.", "danger")
@@ -823,9 +825,7 @@ def passengers():
     """
     cursor.execute(query, (flight_num, airline_name))
     passengers = cursor.fetchall()
-    print(passengers)
-
-
+    print("this is passengers for this flight:", passengers)
 
     return render_template('passengers.html',passengers = passengers, flight_num = flight_num)
 
