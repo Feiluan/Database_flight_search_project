@@ -144,7 +144,7 @@ def register():
                 return redirect(url_for('register'))
             
             elif form_type == 'staff':
-                staff_email = request.form.get('agent_email').split('@')[0]     #看似是email但是实际上只使用@前的字段作为用户名
+                staff_email = request.form.get('agent_email').lower().split('@')[0]     #看似是email但是实际上只使用@前的字段作为用户名
                 staff_password = request.form.get('staff_password')
                 staff_first_name = request.form.get('staff_first_name')
                 staff_last_name = request.form.get('staff_last_name')
@@ -909,6 +909,47 @@ def staff_dashboard():
                            top_commission_booking_agents =  top_commission_booking_agents_json,
                            frequent_customer = most_frequent_customer)
 
+@app.route('/operator', methods=['GET', 'POST'])
+def operator():
+    # 验证用户是否登录和权限
+    if 'user' not in session or session['user']['identity'] != 'staff' or 'Operator' not in session['user']['permissions']:
+        flash("You do not have the required operator permissions.", "danger")
+        return redirect(url_for('login'))
+
+    airline_name = session['user']['airline_name']
+    cursor = db.cursor(dictionary=True)
+
+    # 显示航班信息（GET 请求）
+    if request.method == 'GET':
+        query = """
+            SELECT flight_num, departure_airport, arrival_airport, departure_time, arrival_time, status
+            FROM flight
+            WHERE airline_name = %s AND status != 'Completed'
+        """
+        cursor.execute(query, (airline_name,))
+        airline_flight = cursor.fetchall()
+
+        return render_template('operator.html', airline_flight=airline_flight)
+
+    # 更新航班状态（POST 请求）
+    elif request.method == 'POST':
+        flight_num = request.form.get('flight_num')
+        new_status = request.form.get('status')
+
+        if not flight_num or not new_status:
+            flash("Flight number and status are required.", "danger")
+            return redirect(url_for('change_flight_status'))
+
+        # 更新航班状态
+        cursor.execute("""
+            UPDATE flight
+            SET status = %s
+            WHERE flight_num = %s AND airline_name = %s
+        """, (new_status, flight_num, airline_name))
+        db.commit()
+        flash(f"Flight {flight_num} status updated to {new_status}.", "success")
+
+        return redirect(url_for('operator'))
 
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
@@ -952,7 +993,7 @@ def admin():
                 flash("Airport added successfully!", "success")
 
         elif action == 'add_agent':
-            agent_email = request.form.get('agent_email')
+            agent_email = request.form.get('agent_email').lower()
 
             if not agent_email:
                 flash("Agent email is required.", "danger")
@@ -965,7 +1006,7 @@ def admin():
                 flash("Booking agent added successfully!", "success")
 
         elif action == 'grant_permission':
-            staff_email = request.form.get('staff_email')
+            staff_email = request.form.get('staff_email').lower()
             permission_type = request.form.get('permission_type')
 
             if not all([staff_email, permission_type]):

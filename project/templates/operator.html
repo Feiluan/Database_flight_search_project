@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Change Flight Status</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            text-align: center;
+            padding-top: 50px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        select, button {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .flight-info {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .flight-info table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .flight-info th, .flight-info td {
+            padding: 8px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+        .flight-info th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Change Flight Status</h1>
+        <form action="{{ url_for('operator') }}" method="POST">
+            <label for="flight_num">Flight Number</label>
+            <select id="flight_num" name="flight_num" required>
+                {% for flight in airline_flight %}
+                <option value="{{ flight.flight_num }}">
+                    {{ flight.flight_num }} - {{ flight.departure_airport }} to {{ flight.arrival_airport }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <label for="status">Change Status</label>
+            <select id="status" name="status" required>
+                <option value="Upcoming">Upcoming</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Delayed">Delayed</option>
+                <option value="Completed">Completed</option>
+            </select>
+
+            <button type="submit">Update Status</button>
+        </form>
+
+        <div class="flight-info">
+            <h2>Flights Overview</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Flight Number</th>
+                        <th>Departure</th>
+                        <th>Arrival</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for flight in airline_flight %}
+                    <tr>
+                        <td>{{ flight.flight_num }}</td>
+                        <td>{{ flight.departure_airport }} - {{ flight.departure_time }}</td>
+                        <td>{{ flight.arrival_airport }} - {{ flight.arrival_time }}</td>
+                        <td>{{ flight.status }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
