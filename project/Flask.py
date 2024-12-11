@@ -108,7 +108,7 @@ def register():
                 return redirect(url_for('register'))  # 注册成功后重定向到主页或其他页面
             
             elif form_type == 'agent':
-                agent_email = request.form.get('staff_email').lower().split('@')[0] + '@' + request.form.get('staff_email').lower().split('@')[1]
+                agent_email = request.form.get('agent_email').lower().split('@')[0] + '@' + request.form.get('agent_email').lower().split('@')[1]
                 agent_password = request.form.get('agent_password')
                 agent_id = request.form.get('agent_id')
 
@@ -144,7 +144,7 @@ def register():
                 return redirect(url_for('register'))
             
             elif form_type == 'staff':
-                staff_email = request.form.get('agent_email').lower().split('@')[0]     #看似是email但是实际上只使用@前的字段作为用户名
+                staff_email = request.form.get('staff_email').lower().split('@')[0] + '@' + request.form.get('staff_email').lower().split('@')[1]
                 staff_password = request.form.get('staff_password')
                 staff_first_name = request.form.get('staff_first_name')
                 staff_last_name = request.form.get('staff_last_name')
@@ -210,7 +210,7 @@ def login():
         query = f"SELECT * FROM {table_name} WHERE email = %s"
         cursor.execute(query, (email,))
         user = cursor.fetchone()
-        print(user)
+        print("this is a user test,",user)
 
         if user and check_password_hash(user['password'], password):
             session['user'] = {
@@ -265,7 +265,6 @@ def login():
         #     cursor.close()
 
     return render_template('login.html')
-
 
 
 @app.route('/dashboard/customer', methods=['GET', 'POST'])
@@ -462,6 +461,7 @@ def customer_dashboard():
                            booked_flights = booked_flights, start_date = start_date, end_date = end_date,
                            money_spend = money_spend, monthly_spending = monthly_spending_json, money_time_range_label = money_time_range_label)
 
+
 @app.route('/cancel/<ticket_id>', methods=['POST'])
 def cancel_ticket(ticket_id):
     if 'user' not in session:
@@ -487,9 +487,6 @@ def cancel_ticket(ticket_id):
         cursor.close()
 
     return redirect(url_for('customer_dashboard'))
-
-
-
 
 
 @app.route('/dashboard/agent', methods=['GET', 'POST'])
@@ -659,6 +656,15 @@ def agent_dashboard():
         ORDER BY ticket_count DESC
         LIMIT 5;
     """
+    # query = """
+    #     SELECT p.passport_number, COUNT(*) as ticket_count
+    #     FROM purchases p
+    #     JOIN ticket t ON p.ticket_id = t.ticket_id
+    #     WHERE p.booking_agent_id = %s AND p.purchase_date BETWEEN %s AND %s
+    #     GROUP BY p.passport_number
+    #     ORDER BY ticket_count DESC
+    #     LIMIT 5;
+    # """
     cursor.execute(query, (agent_id, ticket_start_date, ticket_end_date))
     top_customers_ticket = cursor.fetchall()
     print('top customer ticket:', top_customers_ticket)
@@ -684,6 +690,17 @@ def agent_dashboard():
         ORDER BY ticket_commission DESC
         LIMIT 5;
     """
+    # query = """
+    #     SELECT p.passport_number, SUM(f.price*0.1) AS ticket_commission
+    #     FROM purchases p
+    #     JOIN ticket t ON p.ticket_id = t.ticket_id
+    #     JOIN flight f ON t.airline_name = f.airline_name AND t.flight_num = f.flight_num
+    #     WHERE p.booking_agent_id = %s 
+    #     AND p.purchase_date BETWEEN %s AND %s
+    #     GROUP BY p.passport_number
+    #     ORDER BY ticket_commission DESC
+    #     LIMIT 5;
+    # """
 
     cursor.execute(query, (agent_id, commission_start_date, commission_end_date))
     top_customers_commission = cursor.fetchall()
@@ -929,6 +946,8 @@ def operator():
         cursor.execute(query, (airline_name,))
         airline_flight = cursor.fetchall()
 
+        cursor.close()
+
         return render_template('operator.html', airline_flight=airline_flight)
 
     # 更新航班状态（POST 请求）
@@ -948,6 +967,7 @@ def operator():
         """, (new_status, flight_num, airline_name))
         db.commit()
         flash(f"Flight {flight_num} status updated to {new_status}.", "success")
+        cursor.close()
 
         return redirect(url_for('operator'))
 
@@ -972,11 +992,20 @@ def admin():
                 flash("All fields are required to add a new airplane.", "danger")
             else:
                 cursor.execute("""
-                    INSERT INTO airplane (airplane_id, airline_name, seats)
-                    VALUES (%s, %s, %s)
-                """, (airplane_id, airline_name, seats))
-                db.commit()
-                flash("Airplane added successfully!", "success")
+                    SELECT COUNT(*) FROM airplane 
+                    WHERE airplane_id = %s AND airline_name = %s """
+                    , (airplane_id, airline_name))
+                existing_airplane_count = cursor.fetchone()[0]
+
+                if existing_airplane_count > 0:
+                    flash("An airplane with the same ID already exists for this airline.", "danger")
+                else:
+                    cursor.execute("""
+                        INSERT INTO airplane (airplane_id, airline_name, seats)
+                        VALUES (%s, %s, %s)
+                    """, (airplane_id, airline_name, seats))
+                    db.commit()
+                    flash("Airplane added successfully!", "success")
 
         elif action == 'add_airport':
             airport_name = request.form.get('airport_name')
