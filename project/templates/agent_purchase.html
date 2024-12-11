@@ -55,6 +55,16 @@
     </style>
 </head>
 <body>
+    <!-- 显示flash消息 -->
+    <div id="flash_message">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
     <div class="container">
         <h1>Agent Purchase Flight</h1>
 
@@ -75,7 +85,7 @@
         
             <label for="name">Customer Name</label>
             <input type="text" id="name" name="name" placeholder="Enter customer name" required>
-        
+            
             <label for="passport_number">Passport Number</label>
             <input type="text" id="passport_number" name="passport_number" placeholder="Enter passport number" required>
         

@@ -13,7 +13,8 @@ app.secret_key = 'key' #不配置这条会报错
 db = mysql.connector.connect(host='localhost',
                             user='root',
                             password='',
-                            database='finalproject')
+                            database='finalproject',
+                            port=3307)
 
 @app.route('/')
 def home():
@@ -108,7 +109,7 @@ def register():
                 return redirect(url_for('register'))  # 注册成功后重定向到主页或其他页面
             
             elif form_type == 'agent':
-                agent_email = request.form.get('staff_email').lower().split('@')[0] + '@' + request.form.get('staff_email').lower().split('@')[1]
+                agent_email = request.form.get('agent_email').lower().split('@')[0] + '@' + request.form.get('agent_email').lower().split('@')[1]
                 agent_password = request.form.get('agent_password')
                 agent_id = request.form.get('agent_id')
 
@@ -144,7 +145,7 @@ def register():
                 return redirect(url_for('register'))
             
             elif form_type == 'staff':
-                staff_email = request.form.get('agent_email').lower().split('@')[0]     #看似是email但是实际上只使用@前的字段作为用户名
+                staff_email = request.form.get('staff_email').split('@')[0].lower()+ '@' + request.form.get('staff_email').lower().split('@')[1]
                 staff_password = request.form.get('staff_password')
                 staff_first_name = request.form.get('staff_first_name')
                 staff_last_name = request.form.get('staff_last_name')
@@ -193,7 +194,7 @@ def login():
         email = request.form.get('login_email').lower().split('@')[0] + '@' + request.form.get('login_email').split('@')[1]
         password = request.form.get('login_password')  #这里get到的密码应该是输入进去什么就是什么，输入1这里就是1
         identity = request.form.get('login_identity')
-        # print(email, password, identity)
+        print(email, password, identity)
 
         #通过identity定位我从哪个table里面查找我的用户
         table_map = {
@@ -210,7 +211,7 @@ def login():
         query = f"SELECT * FROM {table_name} WHERE email = %s"
         cursor.execute(query, (email,))
         user = cursor.fetchone()
-        print(user)
+        print('222', user)
 
         if user and check_password_hash(user['password'], password):
             session['user'] = {
