@@ -960,7 +960,6 @@ def admin():
         return redirect(url_for('login'))
 
     cursor = db.cursor(dictionary=True)
-
     if request.method == 'POST':
         action = request.form.get('action')
 
@@ -971,6 +970,15 @@ def admin():
 
             if not all([airplane_id, airline_name, seats]):
                 flash("All fields are required to add a new airplane.", "danger")
+            # else:
+            #     cursor.execute("""
+            #         SELECT COUNT(*) FROM airplane 
+            #         WHERE airplane_id = %s AND airline_name = %s """
+            #         , (airplane_id, airline_name))
+            #     existing_airplane_count = cursor.fetchone()[0]
+
+            #     if existing_airplane_count > 0:
+            #         flash("An airplane with the same ID already exists for this airline.", "danger")
             else:
                 cursor.execute("""
                     INSERT INTO airplane (airplane_id, airline_name, seats)
@@ -987,24 +995,56 @@ def admin():
                 flash("All fields are required to add a new airport.", "danger")
             else:
                 cursor.execute("""
-                    INSERT INTO airport (airport_name, airport_city)
-                    VALUES (%s, %s)
-                """, (airport_name, airport_city))
-                db.commit()
-                flash("Airport added successfully!", "success")
+                SELECT COUNT(*) 
+                FROM airport 
+                WHERE airport_name = %s
+                """, (airport_name,))
+                existing_airport = cursor.fetchone()
+
+                if existing_airport and existing_airport['COUNT(*)'] > 0:  # 如果机场名称已存在
+                    flash(f"Airport with name '{airport_name}' already exists.", "danger")
+                else:
+                    cursor.execute("""
+                        INSERT INTO airport (airport_name, airport_city)
+                        VALUES (%s, %s)
+                    """, (airport_name, airport_city))
+                    db.commit()
+                    flash("Airport added successfully!", "success")
 
         elif action == 'add_agent':
             agent_email = request.form.get('agent_email').lower()
 
             if not agent_email:
                 flash("Agent email is required.", "danger")
+            
             else:
                 cursor.execute("""
-                    INSERT INTO booking_agent_work_for (email, airline_name)
-                    VALUES (%s, %s)
-                """, (agent_email, session['user']['airline_name']))
-                db.commit()
-                flash("Booking agent added successfully!", "success")
+                SELECT COUNT(*) 
+                FROM booking_agent 
+                WHERE email = %s
+                """, (agent_email,))
+                email_check_result = cursor.fetchone()
+
+                if result and result['COUNT(*)'] > 0:  
+                    flash(f"The email '{agent_email}' is not registered as a Booking Agent. Please ensure the agent is registered first.", "warning")
+                else:
+                    cursor.execute("""
+                        SELECT COUNT(*) 
+                        FROM booking_agent_work_for 
+                        WHERE email = %s AND airline_name = %s
+                    """, (agent_email, session['user']['airline_name']))
+                    result = cursor.fetchone()
+
+                    if result and result['COUNT(*)'] > 0:  # 如果邮箱已存在
+                        flash(f"The email '{agent_email}' is already registered as an agent for your airline.", "danger")
+
+                    else:
+                        cursor.execute("""
+                            INSERT INTO booking_agent_work_for (email, airline_name)
+                            VALUES (%s, %s)
+                        """, (agent_email, session['user']['airline_name']))
+                        db.commit()
+                        flash("Booking agent added successfully!", "success")
 
         elif action == 'grant_permission':
             staff_email = request.form.get('staff_email').lower()
@@ -1014,12 +1054,81 @@ def admin():
                 flash("All fields are required to grant permissions.", "danger")
             else:
                 cursor.execute("""
-                    INSERT INTO permission (email, permission_type)
-                    VALUES (%s, %s)
-                """, (staff_email, permission_type))
-                db.commit()
-                flash(f"Permission '{permission_type}' granted to {staff_email}.", "success")
+                    SELECT COUNT(*) 
+                    FROM permission 
+                    WHERE email = %s AND permission_type = %s
+                    """, (staff_email, permission_type))
+                result = cursor.fetchone()
 
+                if result and result['COUNT(*)'] > 0:  # 如果权限已经存在
+                    flash(f"The staff '{staff_email}' already has the '{permission_type}' permission.", "danger")
+
+                else:
+                    cursor.execute("""
+                        INSERT INTO permission (email, permission_type)
+                        VALUES (%s, %s)
+                    """, (staff_email, permission_type))
+                    db.commit()
+                    flash(f"Permission '{permission_type}' granted to {staff_email}.", "success")
+    # if request.method == 'POST':
+    #     action = request.form.get('action')
+
+    #     if action == 'add_airplane':
+    #         airplane_id = request.form.get('airplane_id')
+    #         airline_name = session['user']['airline_name']
+    #         seats = request.form.get('seats')
+
+    #         if not all([airplane_id, airline_name, seats]):
+    #             flash("All fields are required to add a new airplane.", "danger")
+    #         else:
+    #             cursor.execute("""
+    #                 INSERT INTO airplane (airplane_id, airline_name, seats)
+    #                 VALUES (%s, %s, %s)
+    #             """, (airplane_id, airline_name, seats))
+    #             db.commit()
+    #             flash("Airplane added successfully!", "success")
+
+    #     elif action == 'add_airport':
+    #         airport_name = request.form.get('airport_name')
+    #         airport_city = request.form.get('airport_city')
+
+    #         if not all([airport_name, airport_city]):
+    #             flash("All fields are required to add a new airport.", "danger")
+    #         else:
+    #             cursor.execute("""
+    #                 INSERT INTO airport (airport_name, airport_city)
+    #                 VALUES (%s, %s)
+    #             """, (airport_name, airport_city))
+    #             db.commit()
+    #             flash("Airport added successfully!", "success")
+
+    #     elif action == 'add_agent':
+    #         agent_email = request.form.get('agent_email').lower()
+
+    #         if not agent_email:
+    #             flash("Agent email is required.", "danger")
+    #         else:
+    #             cursor.execute("""
+    #                 INSERT INTO booking_agent_work_for (email, airline_name)
+    #                 VALUES (%s, %s)
+    #             """, (agent_email, session['user']['airline_name']))
+    #             db.commit()
+    #             flash("Booking agent added successfully!", "success")
+
+    #     elif action == 'grant_permission':
+    #         staff_email = request.form.get('staff_email').lower()
+    #         permission_type = request.form.get('permission_type')
+
+    #         if not all([staff_email, permission_type]):
+    #             flash("All fields are required to grant permissions.", "danger")
+    #         else:
+    #             cursor.execute("""
+    #                 INSERT INTO permission (email, permission_type)
+    #                 VALUES (%s, %s)
+    #             """, (staff_email, permission_type))
+    #             db.commit()
+    #             flash(f"Permission '{permission_type}' granted to {staff_email}.", "success")
+    
     # Fetch all airplanes
     cursor.execute("""
         SELECT airplane_id, seats
@@ -1027,7 +1136,7 @@ def admin():
         WHERE airline_name = %s
     """, (session['user']['airline_name'],))
     airplanes = cursor.fetchall()
-
+    
     cursor.close()
     return render_template('admin.html', airplanes=airplanes)
 
@@ -1550,7 +1659,7 @@ def purchase_flight(flight_num):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run('127.0.0.1', 5000, debug = True)
 
 
 

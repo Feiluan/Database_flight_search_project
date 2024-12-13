@@ -1,0 +1,5 @@
+[33maf423c6[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: reset: moving to HEAD
+[33maf423c6[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{1}: commit: Changed some slight problem with sql comments. Solved a typo in register. Added some spaces for front end of search.
+[33m9f8f346[m HEAD@{2}: checkout: moving from main to main
+[33m9f8f346[m HEAD@{3}: reset: moving to HEAD
+[33m9f8f346[m HEAD@{4}: clone: from https://github.com/Feiluan/Database_flight_search_project.git

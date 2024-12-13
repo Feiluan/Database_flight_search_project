@@ -1,0 +1,39 @@
+[33maf423c6[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Changed some slight problem with sql comments. Solved a typo in register. Added some spaces for front end of search.
+[33m9f8f346[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Merge pull request #5 from Feiluan/development
+[33m345485a[m[33m ([m[1;31morigin/development[m[33m)[m Merge branch 'tony' into development
+[33m2992846[m this is a commit
+[33m37d91b3[m[33m ([m[1;31morigin/tony[m[33m)[m Operator
+[33mbef1002[m add flash script for all html pages
+[33m2404546[m 00
+[33m00fb69a[m Admin
+[33ma4cd626[m fix customer flight
+[33mde0f240[m test
+[33ma10f6a5[m destination Top 3 add
+[33mc941bac[m View revenue comparison chart
+[33m872f750[m View sale reports
+[33mab2e994[m test
+[33m0202f17[m add View frequent customers
+[33m76a813b[m chart for view booking agent ranking of the airline
+[33mcd5c322[m Alignment of Development branch and tony branch
+[33m9622698[m change staff form
+[33mbd71c82[m add function of view passengars of a flight in agent dashboard
+[33m75d51ad[m this is a commit merge test
+[33m851028c[m This is a temporary commit
+[33m87ca208[m This is a temporary commit
+[33mb2569c7[m Merge remote-tracking branch 'origin/main' into tony
+[33m5bada4f[m Save local changes before syncing with main
+[33m0ebfc80[m add the content of staff search flights with all filters
+[33me8b5bfa[m commite test
+[33m255ee2c[m Merge pull request #4 from Feiluan/tony
+[33m9b2bfe2[m update customer page, update session[]
+[33mc4e894f[m Make home.html looks better. Make search.html a better one. Modified customer.html
+[33mc393ed9[m Merge pull request #3 from Feiluan/development
+[33me08376c[m Update the function of showing the top customers ticket bought numbers and commission earned
+[33m5dabdf5[m Edit the format of flash message including css, html and javascript
+[33maecf6b0[m Edit the login session login adding the agent id and staff permission
+[33mec4a3d9[m Merge pull request #2 from Feiluan/development
+[33mb9d94df[m Addition of the customer track spending
+[33m9d21113[m Merge pull request #1 from Feiluan/development
+[33m47b58ae[m this is a commit test in development branch
+[33m8612ea4[m This is a commit test
+[33m595bad8[m first commit
